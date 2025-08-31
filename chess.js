@@ -162,6 +162,11 @@ class ChessGame {
             moves.push({row: row + 2 * direction, col: col});
         }
 
+        // Single square move
+        if (!this.board[row + direction][col]) {
+            moves.push({row: row + direction, col: col});
+        }
+
         // Diagonal captures
         for (const offset of [-1, 1]) {
             const newCol = col + offset;
@@ -221,7 +226,7 @@ class ChessGame {
             for (let col = 0; col < 8; col++) {
                 const piece = board[row][col];
                 if (piece && piece.color !== color) {
-                    const moves = this.getValidMoves(row, col);
+                    const moves = this.getBasicMoves(row, col, board);
                     if (moves.some(move => move.row === kingPos.row && move.col === kingPos.col)) {
                         return true;
                     }
@@ -236,7 +241,7 @@ class ChessGame {
             for (let c = 0; c < 8; c++) {
                 const piece = this.board[r][c];
                 if (piece && piece.color !== this.turn) {
-                    const moves = this.getValidMoves(r, c);
+                    const moves = this.getBasicMoves(r, c, this.board);
                     if (moves.some(move => move.row === row && move.col === col)) {
                         return true;
                     }
@@ -584,6 +589,38 @@ class ChessGame {
         this.updateTurnIndicator();
         this.updateGameStatus('');
         this.updateMoveHistory();
+    }
+
+    getBasicMoves(row, col, board) {
+        const piece = board[row][col];
+        if (!piece) return [];
+
+        const moves = [];
+        const directions = this.getPieceDirections(piece.type);
+
+        for (const dir of directions) {
+            for (let i = 1; i <= (piece.type === 'pawn' ? 1 : 8); i++) {
+                const newRow = row + dir.row * i;
+                const newCol = col + dir.col * i;
+
+                if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
+
+                const targetPiece = board[newRow][newCol];
+                
+                if (!targetPiece) {
+                    moves.push({row: newRow, col: newCol});
+                } else {
+                    if (targetPiece.color !== piece.color) {
+                        moves.push({row: newRow, col: newCol});
+                    }
+                    break;
+                }
+
+                if (piece.type === 'pawn' || piece.type === 'knight') break;
+            }
+        }
+
+        return moves;
     }
 }
 
