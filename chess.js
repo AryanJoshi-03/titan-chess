@@ -2,7 +2,7 @@ class ChessGame {
     constructor() {
         this.canvas = document.getElementById('chessboard');
         this.ctx = this.canvas.getContext('2d');
-        this.squareSize = 50;
+        this.squareSize = 75; // Increased from 50 to 75 for better visibility
         this.selectedPiece = null;
         this.validMoves = [];
         this.turn = 'white';
@@ -14,6 +14,9 @@ class ChessGame {
         this.setupEventListeners();
         this.drawBoard();
         this.drawPieces();
+        this.updateTurnIndicator();
+        this.updateGameStatus('');
+        this.updateMoveHistory();
     }
 
     initializeBoard() {
@@ -50,7 +53,10 @@ class ChessGame {
 
     setupEventListeners() {
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
-        document.getElementById('new-game-btn').addEventListener('click', () => this.newGame());
+        const newGameBtn = document.getElementById('new-game-btn');
+        if (newGameBtn) {
+            newGameBtn.addEventListener('click', () => this.newGame());
+        }
     }
 
     handleClick(e) {
@@ -234,6 +240,38 @@ class ChessGame {
             }
         }
         return false;
+    }
+
+    getBasicMoves(row, col, board) {
+        const piece = board[row][col];
+        if (!piece) return [];
+
+        const moves = [];
+        const directions = this.getPieceDirections(piece.type);
+
+        for (const dir of directions) {
+            for (let i = 1; i <= (piece.type === 'pawn' ? 1 : 8); i++) {
+                const newRow = row + dir.row * i;
+                const newCol = col + dir.col * i;
+
+                if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
+
+                const targetPiece = board[newRow][newCol];
+                
+                if (!targetPiece) {
+                    moves.push({row: newRow, col: newCol});
+                } else {
+                    if (targetPiece.color !== piece.color) {
+                        moves.push({row: newRow, col: newCol});
+                    }
+                    break;
+                }
+
+                if (piece.type === 'pawn' || piece.type === 'knight') break;
+            }
+        }
+
+        return moves;
     }
 
     isSquareUnderAttack(row, col) {
@@ -556,22 +594,28 @@ class ChessGame {
 
     updateTurnIndicator() {
         const turnText = document.getElementById('turn-text');
-        turnText.textContent = `${this.turn === 'white' ? 'White' : 'Black'}'s Turn`;
+        if (turnText) {
+            turnText.textContent = `${this.turn === 'white' ? 'White' : 'Black'}'s Turn`;
+        }
     }
 
     updateGameStatus(status) {
         const gameStatus = document.getElementById('game-status');
-        gameStatus.textContent = status;
+        if (gameStatus) {
+            gameStatus.textContent = status;
+        }
     }
 
     updateMoveHistory() {
         const movesList = document.getElementById('moves-list');
-        movesList.innerHTML = '';
-        
-        for (const move of this.moveHistory) {
-            const moveDiv = document.createElement('div');
-            moveDiv.textContent = move;
-            movesList.appendChild(moveDiv);
+        if (movesList) {
+            movesList.innerHTML = '';
+            
+            for (const move of this.moveHistory) {
+                const moveDiv = document.createElement('div');
+                moveDiv.textContent = move;
+                movesList.appendChild(moveDiv);
+            }
         }
     }
 
@@ -590,41 +634,14 @@ class ChessGame {
         this.updateGameStatus('');
         this.updateMoveHistory();
     }
-
-    getBasicMoves(row, col, board) {
-        const piece = board[row][col];
-        if (!piece) return [];
-
-        const moves = [];
-        const directions = this.getPieceDirections(piece.type);
-
-        for (const dir of directions) {
-            for (let i = 1; i <= (piece.type === 'pawn' ? 1 : 8); i++) {
-                const newRow = row + dir.row * i;
-                const newCol = col + dir.col * i;
-
-                if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
-
-                const targetPiece = board[newRow][newCol];
-                
-                if (!targetPiece) {
-                    moves.push({row: newRow, col: newCol});
-                } else {
-                    if (targetPiece.color !== piece.color) {
-                        moves.push({row: newRow, col: newCol});
-                    }
-                    break;
-                }
-
-                if (piece.type === 'pawn' || piece.type === 'knight') break;
-            }
-        }
-
-        return moves;
-    }
 }
 
 // Initialize the game when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    new ChessGame();
+    try {
+        new ChessGame();
+        console.log('Chess game initialized successfully!');
+    } catch (error) {
+        console.error('Error initializing chess game:', error);
+    }
 }); 

@@ -5,15 +5,15 @@
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', sans-serif;
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     color: #333;
     min-height: 100vh;
-    line-height: 1.6;
+    padding: 20px;
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -25,7 +25,7 @@ body {
 }
 
 .title {
-    font-size: 3rem;
+    font-size: 3.5rem;
     font-weight: 700;
     margin-bottom: 10px;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
@@ -38,34 +38,35 @@ body {
 }
 
 .game-container {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    display: flex;
     gap: 30px;
-    align-items: start;
+    justify-content: center;
+    align-items: flex-start;
     margin-bottom: 40px;
+    flex-wrap: wrap;
 }
 
 .game-info {
     background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    min-width: 200px;
     text-align: center;
 }
 
 .turn-indicator {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 600;
-    margin-bottom: 15px;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 8px;
+    margin-bottom: 20px;
+    color: #2a5298;
 }
 
 .game-status {
+    font-size: 1rem;
+    color: #666;
     margin-bottom: 20px;
     min-height: 20px;
-    font-weight: 500;
 }
 
 .btn {
@@ -73,9 +74,9 @@ body {
     border: none;
     border-radius: 8px;
     font-size: 1rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     font-family: inherit;
 }
 
@@ -91,120 +92,144 @@ body {
 
 .chessboard-container {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
 #chessboard {
-    border: 3px solid #2c3e50;
+    border: 3px solid #8B4513;
     border-radius: 8px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
-    cursor: pointer;
+    display: block;
+    margin: 0 auto;
 }
 
 .board-labels {
     position: absolute;
-    width: 100%;
-    height: 100%;
     pointer-events: none;
 }
 
 .file-labels {
     position: absolute;
-    bottom: -25px;
-    left: 0;
-    right: 0;
+    bottom: 5px;
+    left: 20px;
+    right: 20px;
     display: flex;
-    justify-content: space-around;
-    font-weight: 500;
-    color: #2c3e50;
+    justify-content: space-between;
+    color: #8B4513;
+    font-weight: 600;
+    font-size: 0.9rem;
 }
 
 .rank-labels {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -25px;
+    top: 20px;
+    bottom: 20px;
+    left: 5px;
     display: flex;
     flex-direction: column;
-    justify-content: space-around;
-    font-weight: 500;
-    color: #2c3e50;
+    justify-content: space-between;
+    color: #8B4513;
+    font-weight: 600;
+    font-size: 0.9rem;
 }
 
 .move-history {
     background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    min-width: 200px;
+    max-height: 600px;
+    overflow-y: auto;
 }
 
 .move-history h3 {
-    margin-bottom: 15px;
-    color: #2c3e50;
-    font-size: 1.1rem;
+    margin-bottom: 20px;
+    color: #2a5298;
+    font-size: 1.3rem;
 }
 
 .moves-list {
-    max-height: 300px;
-    overflow-y: auto;
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
 }
 
 .moves-list div {
-    padding: 4px 0;
+    padding: 5px 0;
     border-bottom: 1px solid #eee;
 }
 
 .features {
     background: white;
     padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     text-align: center;
 }
 
 .features h3 {
-    margin-bottom: 20px;
-    color: #2c3e50;
-    font-size: 1.3rem;
+    margin-bottom: 25px;
+    color: #2a5298;
+    font-size: 1.5rem;
 }
 
 .features ul {
     list-style: none;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px;
+    gap: 20px;
+    text-align: left;
 }
 
 .features li {
-    padding: 15px;
+    padding: 15px 20px;
     background: #f8f9fa;
-    border-radius: 8px;
-    font-weight: 500;
-    color: #495057;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+    font-size: 1rem;
+    color: #555;
+    transition: transform 0.2s ease;
+}
+
+.features li:hover {
+    transform: translateX(5px);
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
     .game-container {
-        grid-template-columns: 1fr;
-        gap: 20px;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .game-info, .move-history {
+        min-width: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
     }
     
     .title {
-        font-size: 2rem;
+        font-size: 2.5rem;
     }
     
-    .container {
+    .subtitle {
+        font-size: 1rem;
+    }
+    
+    .chessboard-container {
         padding: 15px;
     }
     
     #chessboard {
-        width: 320px;
-        height: 320px;
+        width: 100%;
+        max-width: 400px;
+        height: auto;
     }
     
     .features ul {
@@ -213,12 +238,17 @@ body {
 }
 
 @media (max-width: 480px) {
-    #chessboard {
-        width: 280px;
-        height: 280px;
+    .title {
+        font-size: 2rem;
     }
     
-    .title {
-        font-size: 1.8rem;
+    .game-info, .move-history {
+        min-width: 250px;
+        padding: 20px;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
     }
 } 
