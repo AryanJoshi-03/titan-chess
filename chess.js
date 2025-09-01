@@ -2,13 +2,14 @@ class ChessGame {
     constructor() {
         this.canvas = document.getElementById('chessboard');
         this.ctx = this.canvas.getContext('2d');
-        this.squareSize = 75; // Increased from 50 to 75 for better visibility
+        this.squareSize = 75;
         this.selectedPiece = null;
         this.validMoves = [];
         this.turn = 'white';
         this.gameOver = false;
         this.moveHistory = [];
         this.moveCount = 1;
+        this.lastMove = null;
         
         this.initializeBoard();
         this.setupEventListeners();
@@ -22,30 +23,32 @@ class ChessGame {
     initializeBoard() {
         this.board = Array(8).fill(null).map(() => Array(8).fill(null));
         
-        // Initialize pieces
+        // Initialize pieces - EXACTLY like your Python version
         const pieces = [
             ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'],
             ['pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
         ];
 
-        // Place black pieces
+        // Place black pieces (top rows)
         for (let row = 0; row < 2; row++) {
             for (let col = 0; col < 8; col++) {
                 this.board[row][col] = {
                     type: pieces[row][col],
                     color: 'black',
-                    hasMoved: false
+                    hasMoved: false,
+                    position: [row, col]
                 };
             }
         }
 
-        // Place white pieces
+        // Place white pieces (bottom rows)
         for (let row = 6; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 this.board[row][col] = {
                     type: pieces[7-row][col],
                     color: 'white',
-                    hasMoved: false
+                    hasMoved: false,
+                    position: [row, col]
                 };
             }
         }
@@ -99,78 +102,53 @@ class ChessGame {
         }
     }
 
+    // EXACT SAME LOGIC AS YOUR PYTHON VERSION
     getValidMoves(row, col) {
         const piece = this.board[row][col];
         if (!piece) return [];
 
-        const moves = [];
-        const directions = this.getPieceDirections(piece.type);
-
-        for (const dir of directions) {
-            for (let i = 1; i <= (piece.type === 'pawn' ? 1 : 8); i++) {
-                const newRow = row + dir.row * i;
-                const newCol = col + dir.col * i;
-
-                if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
-
-                const targetPiece = this.board[newRow][newCol];
-                
-                if (!targetPiece) {
-                    moves.push({row: newRow, col: newCol});
-                } else {
-                    if (targetPiece.color !== piece.color) {
-                        moves.push({row: newRow, col: newCol});
-                    }
-                    break;
-                }
-
-                if (piece.type === 'pawn' || piece.type === 'knight') break;
-            }
+        let moves = [];
+        
+        switch (piece.type) {
+            case 'pawn':
+                moves = this.pawnMoves(piece);
+                break;
+            case 'knight':
+                moves = this.knightMoves(piece);
+                break;
+            case 'bishop':
+                moves = this.bishopMoves(piece);
+                break;
+            case 'rook':
+                moves = this.rookMoves(piece);
+                break;
+            case 'queen':
+                moves = this.queenMoves(piece);
+                break;
+            case 'king':
+                moves = this.kingMoves(piece);
+                break;
         }
 
-        // Special moves
-        if (piece.type === 'pawn') {
-            this.addPawnMoves(moves, row, col, piece);
-        } else if (piece.type === 'king') {
-            this.addCastlingMoves(moves, row, col, piece);
-        }
-
+        // Filter moves that don't leave king in check
         return moves.filter(move => this.isLegalMove(row, col, move.row, move.col));
     }
 
-    getPieceDirections(type) {
-        switch (type) {
-            case 'pawn':
-                return [{row: -1, col: 0}]; // White pawns move up
-            case 'rook':
-                return [{row: 1, col: 0}, {row: -1, col: 0}, {row: 0, col: 1}, {row: 0, col: -1}];
-            case 'bishop':
-                return [{row: 1, col: 1}, {row: 1, col: -1}, {row: -1, col: 1}, {row: -1, col: -1}];
-            case 'queen':
-                return [{row: 1, col: 0}, {row: -1, col: 0}, {row: 0, col: 1}, {row: 0, col: -1},
-                        {row: 1, col: 1}, {row: 1, col: -1}, {row: -1, col: 1}, {row: -1, col: -1}];
-            case 'king':
-                return [{row: 1, col: 0}, {row: -1, col: 0}, {row: 0, col: 1}, {row: 0, col: -1},
-                        {row: 1, col: 1}, {row: 1, col: -1}, {row: -1, col: 1}, {row: -1, col: -1}];
-            case 'knight':
-                return [{row: -2, col: -1}, {row: -2, col: 1}, {row: -1, col: -2}, {row: -1, col: 2},
-                        {row: 1, col: -2}, {row: 1, col: 2}, {row: 2, col: -1}, {row: 2, col: 1}];
-        }
-        return [];
-    }
-
-    addPawnMoves(moves, row, col, piece) {
+    // EXACT SAME PAWN LOGIC AS PYTHON
+    pawnMoves(piece) {
+        const moves = [];
+        const [row, col] = piece.position;
         const direction = piece.color === 'white' ? -1 : 1;
         const startRow = piece.color === 'white' ? 6 : 1;
 
-        // Initial two-square move
-        if (row === startRow && !this.board[row + direction][col] && !this.board[row + 2 * direction][col]) {
-            moves.push({row: row + 2 * direction, col: col});
-        }
-
         // Single square move
-        if (!this.board[row + direction][col]) {
+        if (this.isValidSquare(row + direction, col, piece.color) && !this.board[row + direction][col]) {
             moves.push({row: row + direction, col: col});
+            
+            // Two square move from start
+            if (row === startRow && !this.board[row + 2 * direction][col]) {
+                moves.push({row: row + 2 * direction, col: col});
+            }
         }
 
         // Diagonal captures
@@ -183,24 +161,172 @@ class ChessGame {
                 }
             }
         }
+
+        return moves;
     }
 
-    addCastlingMoves(moves, row, col, piece) {
-        if (piece.hasMoved) return;
+    // EXACT SAME KNIGHT LOGIC AS PYTHON
+    knightMoves(piece) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const possibleMoves = [
+            [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+            [2, -1], [2, 1], [1, 2], [1, -2]
+        ];
 
-        // King-side castling
-        if (this.board[row][7] && this.board[row][7].type === 'rook' && !this.board[row][7].hasMoved) {
-            if (!this.board[row][5] && !this.board[row][6] && !this.isSquareUnderAttack(row, 5) && !this.isSquareUnderAttack(row, 6)) {
-                moves.push({row: row, col: 6});
+        for (const [r, c] of possibleMoves) {
+            const newRow = row + r;
+            const newCol = col + c;
+            if (this.isValidSquare(newRow, newCol, piece.color)) {
+                moves.push({row: newRow, col: newCol});
             }
         }
 
-        // Queen-side castling
-        if (this.board[row][0] && this.board[row][0].type === 'rook' && !this.board[row][0].hasMoved) {
-            if (!this.board[row][1] && !this.board[row][2] && !this.board[row][3] && !this.isSquareUnderAttack(row, 2) && !this.isSquareUnderAttack(row, 3)) {
+        return moves;
+    }
+
+    // EXACT SAME BISHOP LOGIC AS PYTHON
+    bishopMoves(piece) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const directions = [[1, 1], [-1, 1], [1, -1], [-1, -1]];
+
+        for (const [r, c] of directions) {
+            let newRow = row + r;
+            let newCol = col + c;
+            
+            while (this.isValidSquare(newRow, newCol, piece.color)) {
+                if (!this.board[newRow][newCol]) {
+                    moves.push({row: newRow, col: newCol});
+                } else if (this.board[newRow][newCol].color !== piece.color) {
+                    moves.push({row: newRow, col: newCol});
+                    break;
+                } else {
+                    break;
+                }
+                newRow += r;
+                newCol += c;
+            }
+        }
+
+        return moves;
+    }
+
+    // EXACT SAME ROOK LOGIC AS PYTHON
+    rookMoves(piece) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const directions = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+
+        for (const [r, c] of directions) {
+            let newRow = row + r;
+            let newCol = col + c;
+            
+            while (this.isValidSquare(newRow, newCol, piece.color)) {
+                if (!this.board[newRow][newCol]) {
+                    moves.push({row: newRow, col: newCol});
+                } else if (this.board[newRow][newCol].color !== piece.color) {
+                    moves.push({row: newRow, col: newCol});
+                    break;
+                } else {
+                    break;
+                }
+                newRow += r;
+                newCol += c;
+            }
+        }
+
+        return moves;
+    }
+
+    // EXACT SAME QUEEN LOGIC AS PYTHON
+    queenMoves(piece) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const directions = [
+            [1, 0], [0, 1], [-1, 0], [0, -1],
+            [1, 1], [-1, 1], [1, -1], [-1, -1]
+        ];
+
+        for (const [r, c] of directions) {
+            let newRow = row + r;
+            let newCol = col + c;
+            
+            while (this.isValidSquare(newRow, newCol, piece.color)) {
+                if (!this.board[newRow][newCol]) {
+                    moves.push({row: newRow, col: newCol});
+                } else if (this.board[newRow][newCol].color !== piece.color) {
+                    moves.push({row: newRow, col: newCol});
+                    break;
+                } else {
+                    break;
+                }
+                newRow += r;
+                newCol += c;
+            }
+        }
+
+        return moves;
+    }
+
+    // EXACT SAME KING LOGIC AS PYTHON
+    kingMoves(piece) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const directions = [
+            [1, 0], [0, 1], [-1, 0], [0, -1],
+            [1, 1], [-1, 1], [1, -1], [-1, -1]
+        ];
+
+        for (const [r, c] of directions) {
+            const newRow = row + r;
+            const newCol = col + c;
+            if (this.isValidSquare(newRow, newCol, piece.color)) {
+                moves.push({row: newRow, col: newCol});
+            }
+        }
+
+        // Add castling moves
+        if (!piece.hasMoved) {
+            // King-side castling
+            if (this.canCastle(piece, this.board[row][7])) {
+                moves.push({row: row, col: 6});
+            }
+            // Queen-side castling
+            if (this.canCastle(piece, this.board[row][0])) {
                 moves.push({row: row, col: 2});
             }
         }
+
+        return moves;
+    }
+
+    // EXACT SAME VALIDATION LOGIC AS PYTHON
+    isValidSquare(row, col, pieceColor) {
+        return row >= 0 && row < 8 && col >= 0 && col < 8 && 
+               (!this.board[row][col] || this.board[row][col].color !== pieceColor);
+    }
+
+    canCastle(king, rook) {
+        if (!rook || rook.type !== 'rook' || rook.hasMoved || rook.color !== king.color) {
+            return false;
+        }
+
+        const [row, col] = king.position;
+        const rookCol = rook.position[1];
+
+        // Check if squares between king and rook are empty
+        if (rookCol === 0) { // Queen-side
+            for (let c = 1; c < col; c++) {
+                if (this.board[row][c]) return false;
+            }
+        } else if (rookCol === 7) { // King-side
+            for (let c = col + 1; c < 7; c++) {
+                if (this.board[row][c]) return false;
+            }
+        }
+
+        return true;
     }
 
     isLegalMove(fromRow, fromCol, toRow, toCol) {
@@ -246,47 +372,180 @@ class ChessGame {
         const piece = board[row][col];
         if (!piece) return [];
 
+        let moves = [];
+        
+        switch (piece.type) {
+            case 'pawn':
+                moves = this.pawnMovesBasic(piece, board);
+                break;
+            case 'knight':
+                moves = this.knightMovesBasic(piece, board);
+                break;
+            case 'bishop':
+                moves = this.bishopMovesBasic(piece, board);
+                break;
+            case 'rook':
+                moves = this.rookMovesBasic(piece, board);
+                break;
+            case 'queen':
+                moves = this.queenMovesBasic(piece, board);
+                break;
+            case 'king':
+                moves = this.kingMovesBasic(piece, board);
+                break;
+        }
+
+        return moves;
+    }
+
+    // Basic move methods for checking check (no recursion)
+    pawnMovesBasic(piece, board) {
         const moves = [];
-        const directions = this.getPieceDirections(piece.type);
+        const [row, col] = piece.position;
+        const direction = piece.color === 'white' ? -1 : 1;
 
-        for (const dir of directions) {
-            for (let i = 1; i <= (piece.type === 'pawn' ? 1 : 8); i++) {
-                const newRow = row + dir.row * i;
-                const newCol = col + dir.col * i;
+        // Single square move
+        if (row + direction >= 0 && row + direction < 8 && col >= 0 && col < 8) {
+            if (!board[row + direction][col]) {
+                moves.push({row: row + direction, col: col});
+            }
+        }
 
-                if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
-
-                const targetPiece = board[newRow][newCol];
-                
-                if (!targetPiece) {
-                    moves.push({row: newRow, col: newCol});
-                } else {
-                    if (targetPiece.color !== piece.color) {
-                        moves.push({row: newRow, col: newCol});
-                    }
-                    break;
+        // Diagonal captures
+        for (const offset of [-1, 1]) {
+            const newCol = col + offset;
+            if (newCol >= 0 && newCol < 8 && row + direction >= 0 && row + direction < 8) {
+                const targetPiece = board[row + direction][newCol];
+                if (targetPiece && targetPiece.color !== piece.color) {
+                    moves.push({row: row + direction, col: newCol});
                 }
-
-                if (piece.type === 'pawn' || piece.type === 'knight') break;
             }
         }
 
         return moves;
     }
 
-    isSquareUnderAttack(row, col) {
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                const piece = this.board[r][c];
-                if (piece && piece.color !== this.turn) {
-                    const moves = this.getBasicMoves(r, c, this.board);
-                    if (moves.some(move => move.row === row && move.col === col)) {
-                        return true;
-                    }
+    knightMovesBasic(piece, board) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const possibleMoves = [
+            [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+            [2, -1], [2, 1], [1, 2], [1, -2]
+        ];
+
+        for (const [r, c] of possibleMoves) {
+            const newRow = row + r;
+            const newCol = col + c;
+            if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                if (!board[newRow][newCol] || board[newRow][newCol].color !== piece.color) {
+                    moves.push({row: newRow, col: newCol});
                 }
             }
         }
-        return false;
+
+        return moves;
+    }
+
+    bishopMovesBasic(piece, board) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const directions = [[1, 1], [-1, 1], [1, -1], [-1, -1]];
+
+        for (const [r, c] of directions) {
+            let newRow = row + r;
+            let newCol = col + c;
+            
+            while (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                if (!board[newRow][newCol]) {
+                    moves.push({row: newRow, col: newCol});
+                } else if (board[newRow][newCol].color !== piece.color) {
+                    moves.push({row: newRow, col: newCol});
+                    break;
+                } else {
+                    break;
+                }
+                newRow += r;
+                newCol += c;
+            }
+        }
+
+        return moves;
+    }
+
+    rookMovesBasic(piece, board) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const directions = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+
+        for (const [r, c] of directions) {
+            let newRow = row + r;
+            let newCol = col + c;
+            
+            while (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                if (!board[newRow][newCol]) {
+                    moves.push({row: newRow, col: newCol});
+                } else if (board[newRow][newCol].color !== piece.color) {
+                    moves.push({row: newRow, col: newCol});
+                    break;
+                } else {
+                    break;
+                }
+                newRow += r;
+                newCol += c;
+            }
+        }
+
+        return moves;
+    }
+
+    queenMovesBasic(piece, board) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const directions = [
+            [1, 0], [0, 1], [-1, 0], [0, -1],
+            [1, 1], [-1, 1], [1, -1], [-1, -1]
+        ];
+
+        for (const [r, c] of directions) {
+            let newRow = row + r;
+            let newCol = col + c;
+            
+            while (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                if (!board[newRow][newCol]) {
+                    moves.push({row: newRow, col: newCol});
+                } else if (board[newRow][newCol].color !== piece.color) {
+                    moves.push({row: newRow, col: newCol});
+                    break;
+                } else {
+                    break;
+                }
+                newRow += r;
+                newCol += c;
+            }
+        }
+
+        return moves;
+    }
+
+    kingMovesBasic(piece, board) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const directions = [
+            [1, 0], [0, 1], [-1, 0], [0, -1],
+            [1, 1], [-1, 1], [1, -1], [-1, -1]
+        ];
+
+        for (const [r, c] of directions) {
+            const newRow = row + r;
+            const newCol = col + c;
+            if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                if (!board[newRow][newCol] || board[newRow][newCol].color !== piece.color) {
+                    moves.push({row: newRow, col: newCol});
+                }
+            }
+        }
+
+        return moves;
     }
 
     movePiece(from, to) {
@@ -301,11 +560,12 @@ class ChessGame {
         // Move piece
         this.board[to.row][to.col] = piece;
         this.board[from.row][from.col] = null;
+        piece.position = [to.row, to.col];
         piece.hasMoved = true;
 
         // Handle pawn promotion
         if (piece.type === 'pawn' && (to.row === 0 || to.row === 7)) {
-            this.board[to.row][to.col] = {type: 'queen', color: piece.color, hasMoved: true};
+            this.board[to.row][to.col] = {type: 'queen', color: piece.color, hasMoved: true, position: [to.row, to.col]};
         }
 
         // Record move
@@ -337,10 +597,12 @@ class ChessGame {
         if (to.col === 6) { // King-side
             this.board[row][5] = this.board[row][7];
             this.board[row][7] = null;
+            this.board[row][5].position = [row, 5];
             this.board[row][5].hasMoved = true;
         } else if (to.col === 2) { // Queen-side
             this.board[row][3] = this.board[row][0];
             this.board[row][0] = null;
+            this.board[row][3].position = [row, 3];
             this.board[row][3].hasMoved = true;
         }
     }
@@ -627,6 +889,7 @@ class ChessGame {
         this.gameOver = false;
         this.moveHistory = [];
         this.moveCount = 1;
+        this.lastMove = null;
         
         this.drawBoard();
         this.drawPieces();
@@ -640,7 +903,7 @@ class ChessGame {
 document.addEventListener('DOMContentLoaded', () => {
     try {
         new ChessGame();
-        console.log('Chess game initialized successfully!');
+        console.log('Chess game initialized successfully with Python logic!');
     } catch (error) {
         console.error('Error initializing chess game:', error);
     }
