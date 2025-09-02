@@ -32,10 +32,10 @@ st.markdown("""
         margin-bottom: 2rem;
     }
     .chess-board {
-        background: linear-gradient(135deg, #DEB887 0%, #8B4513 100%);
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        background: transparent;
+        border-radius: 0px;
+        padding: 0px;
+        box-shadow: none;
     }
     .game-info {
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -73,12 +73,12 @@ st.markdown("""
     }
     /* Custom button styling for chess squares */
     .stButton > button {
-        width: 80px !important;
-        height: 80px !important;
-        font-size: 48px !important;
-        border: 2px solid #8B4513 !important;
-        border-radius: 4px !important;
-        margin: 2px !important;
+        width: 60px !important;
+        height: 60px !important;
+        font-size: 36px !important;
+        border: 1px solid #8B4513 !important;
+        border-radius: 2px !important;
+        margin: 0px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -87,8 +87,8 @@ st.markdown("""
         font-weight: bold !important;
         transition: all 0.2s ease !important;
         padding: 0 !important;
-        min-height: 80px !important;
-        min-width: 80px !important;
+        min-height: 60px !important;
+        min-width: 60px !important;
     }
     
     .stButton > button:hover {
@@ -106,8 +106,8 @@ st.markdown("""
     .stButton {
         margin: 0 !important;
         padding: 0 !important;
-        width: 80px !important;
-        height: 80px !important;
+        width: 60px !important;
+        height: 60px !important;
     }
     
     /* Override Streamlit's default button styling */
@@ -826,12 +826,7 @@ def make_ai_move():
                     # Update FEN state
                     update_fen_state(st.session_state.board, target_position, piece, 'black')
                     
-                    # Record move with proper chess notation
-                    from_pos = (start_row, start_col)
-                    to_pos = (end_row, end_col)
-                    captured_piece = st.session_state.board[end_row][end_col] if st.session_state.board[end_row][end_col] else None
-                    move_notation = get_chess_notation(piece, from_pos, to_pos, captured_piece)
-                    st.session_state.move_history.append(f"{len(st.session_state.move_history) + 1}. {move_notation}")
+                    
                     
                     st.session_state.turn = 'white'
                     
@@ -858,10 +853,10 @@ if 'board' not in st.session_state:
     st.session_state.last_move = None
     st.session_state.selected_piece = None
     st.session_state.game_over = False
-    st.session_state.move_history = []
 
-# Create two columns
-col1, col2 = st.columns([3, 1])
+
+# Create two columns - make board smaller
+col1, col2 = st.columns([2, 1])
 
 with col1:
     st.markdown('<div class="chess-board">', unsafe_allow_html=True)
@@ -945,12 +940,7 @@ with col1:
                                                 rook.update_position((row, 3))
                                                 st.session_state.board[row][0] = None
                                     
-                                    # Record move with proper chess notation
-                                    from_pos = (selected_row, selected_col)
-                                    to_pos = (row, col)
-                                    captured_piece = st.session_state.board[row][col] if st.session_state.board[row][col] else None
-                                    move_notation = get_chess_notation(selected_piece, from_pos, to_pos, captured_piece)
-                                    st.session_state.move_history.append(f"{len(st.session_state.move_history) + 1}. {move_notation}")
+
                                     
                                     st.session_state.last_move = ((selected_row, selected_col), (row, col))
                                     st.session_state.turn = 'black'
@@ -997,12 +987,7 @@ with col2:
     elif is_in_check(st.session_state.board, st.session_state.turn):
         st.markdown('<div class="status-message check-warning">⚠️ Check!</div>', unsafe_allow_html=True)
     
-    # Move history
-    st.subheader("📜 Move History")
-    st.markdown('<div class="move-history">', unsafe_allow_html=True)
-    for move in st.session_state.move_history[-10:]:  # Show last 10 moves
-        st.write(move)
-    st.markdown('</div>', unsafe_allow_html=True)
+
     
     # New game button
     if st.button("🔄 New Game", use_container_width=True):
@@ -1011,7 +996,7 @@ with col2:
         st.session_state.last_move = None
         st.session_state.selected_piece = None
         st.session_state.game_over = False
-        st.session_state.move_history = []
+    
         # Reset FEN state
         castling_rights = 'KQkq'
         en_passant = '-'
