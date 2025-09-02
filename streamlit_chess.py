@@ -739,109 +739,151 @@ with col1:
     st.markdown('<div class="chess-board">', unsafe_allow_html=True)
     st.subheader("♔ Chess Board")
     
-    # Create a proper chess board using columns but with better styling
-    board_container = st.container()
+    # Create a proper visual chess board using a single container with styled divs
+    board_html = """
+    <div style="display: inline-block; border: 3px solid #8B4513; border-radius: 8px; padding: 10px; background: #DEB887; margin: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(8, 70px); grid-template-rows: repeat(8, 70px); gap: 2px;">
+    """
     
-    with board_container:
-        # Create 8 rows
-        for row in range(8):
-            # Create 8 columns for this row
-            cols = st.columns(8)
+    # Generate the board squares with proper styling
+    for row in range(8):
+        for col in range(8):
+            piece = st.session_state.board[row][col]
             
-            for col in range(8):
-                with cols[col]:
+            # Determine square color (same as your Python version)
+            is_light_square = (row + col) % 2 == 0
+            square_color = "#F0D9B5" if is_light_square else "#B58863"
+            
+            # Check if this square is selected or a valid move
+            border_style = "2px solid #666"
+            if st.session_state.selected_piece == (row, col):
+                square_color = "#FFFF00"
+                border_style = "3px solid #FFD700"
+            elif st.session_state.selected_piece:
+                selected_row, selected_col = st.session_state.selected_piece
+                selected_piece = st.session_state.board[selected_row][selected_col]
+                valid_moves = get_valid_moves(selected_piece, st.session_state.board, st.session_state.last_move)
+                if (row, col) in valid_moves:
+                    square_color = "#90EE90"
+                    border_style = "2px solid #00AA00"
+            
+            piece_symbol = get_piece_symbol(piece)
+            
+            # Create clickable square
+            board_html += f"""
+            <div style="
+                background-color: {square_color};
+                border: {border_style};
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 36px;
+                cursor: pointer;
+                user-select: none;
+                border-radius: 4px;
+                transition: all 0.2s ease;
+            " onclick="selectSquare({row}, {col})" 
+               onmouseover="this.style.transform='scale(1.05)'" 
+               onmouseout="this.style.transform='scale(1)'"
+               id="square_{row}_{col}">
+                {piece_symbol}
+            </div>
+            """
+    
+    board_html += """
+        </div>
+    </div>
+    
+    <script>
+    function selectSquare(row, col) {
+        // Create a hidden input to send data to Streamlit
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'chess_click';
+        input.value = row + ',' + col;
+        document.body.appendChild(input);
+        
+        // Trigger a form submission to Streamlit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = window.location.href;
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+    </script>
+    """
+    
+    st.markdown(board_html, unsafe_allow_html=True)
+    
+    # Handle square selection using a different approach
+    # Create a grid of invisible buttons for each square
+    for row in range(8):
+        for col in range(8):
+            if st.button("", key=f"square_{row}_{col}", help=f"Click square {chr(97 + col)}{8 - row}"):
+                if not st.session_state.game_over:
                     piece = st.session_state.board[row][col]
                     
-                    # Determine square color and styling
-                    is_light_square = (row + col) % 2 == 0
-                    square_color = "#F0D9B5" if is_light_square else "#B58863"
-                    
-                    # Check if this square is selected or a valid move
-                    button_style = ""
-                    if st.session_state.selected_piece == (row, col):
-                        square_color = "#FFFF00"
-                        button_style = "border: 3px solid #FFD700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);"
-                    elif st.session_state.selected_piece:
+                    if st.session_state.selected_piece is None:
+                        # Select piece
+                        if piece and piece.color == st.session_state.turn:
+                            st.session_state.selected_piece = (row, col)
+                            st.rerun()
+                    else:
+                        # Try to move
                         selected_row, selected_col = st.session_state.selected_piece
                         selected_piece = st.session_state.board[selected_row][selected_col]
-                        valid_moves = get_valid_moves(selected_piece, st.session_state.board, st.session_state.last_move)
-                        if (row, col) in valid_moves:
-                            square_color = "#90EE90"
-                            button_style = "border: 2px solid #00AA00; box-shadow: 0 0 5px rgba(0, 170, 0, 0.3);"
-                    
-                    piece_symbol = get_piece_symbol(piece)
-                    
-                    # Create button with custom styling
-                    button_key = f"square_{row}_{col}"
-                    
-                    # Use st.button with custom CSS
-                    if st.button(
-                        piece_symbol, 
-                        key=button_key,
-                        help=f"Square {chr(97 + col)}{8 - row}",
-                        use_container_width=True
-                    ):
-                        if not st.session_state.game_over:
-                            if st.session_state.selected_piece is None:
-                                # Select piece
-                                if piece and piece.color == st.session_state.turn:
-                                    st.session_state.selected_piece = (row, col)
-                                    st.rerun()
-                            else:
-                                # Try to move
-                                selected_row, selected_col = st.session_state.selected_piece
-                                selected_piece = st.session_state.board[selected_row][selected_col]
+                        
+                        if piece and piece.color == st.session_state.turn:
+                            # Select different piece
+                            st.session_state.selected_piece = (row, col)
+                            st.rerun()
+                        else:
+                            # Try to move to this square
+                            valid_moves = get_valid_moves(selected_piece, st.session_state.board, st.session_state.last_move)
+                            if (row, col) in valid_moves:
+                                # Make the move
+                                st.session_state.board[row][col] = selected_piece
+                                st.session_state.board[selected_row][selected_col] = None
+                                selected_piece.update_position((row, col))
                                 
-                                if piece and piece.color == st.session_state.turn:
-                                    # Select different piece
-                                    st.session_state.selected_piece = (row, col)
-                                    st.rerun()
-                                else:
-                                    # Try to move to this square
-                                    valid_moves = get_valid_moves(selected_piece, st.session_state.board, st.session_state.last_move)
-                                    if (row, col) in valid_moves:
-                                        # Make the move
-                                        st.session_state.board[row][col] = selected_piece
-                                        st.session_state.board[selected_row][selected_col] = None
-                                        selected_piece.update_position((row, col))
-                                        
-                                        # Handle castling
-                                        if selected_piece.piece_type == 'king' and abs(selected_col - col) == 2:
-                                            if col > selected_col:  # King-side castling
-                                                rook = st.session_state.board[row][7]
-                                                if can_castle(st.session_state.board, selected_piece, rook):
-                                                    st.session_state.board[row][5] = rook
-                                                    rook.update_position((row, 5))
-                                                    st.session_state.board[row][7] = None
-                                            else:  # Queen-side castling
-                                                rook = st.session_state.board[row][0]
-                                                if can_castle(st.session_state.board, selected_piece, rook):
-                                                    st.session_state.board[row][3] = rook
-                                                    rook.update_position((row, 3))
-                                                    st.session_state.board[row][0] = None
-                                        
-                                        # Record move with proper chess notation
-                                        from_pos = (selected_row, selected_col)
-                                        to_pos = (row, col)
-                                        captured_piece = st.session_state.board[row][col] if st.session_state.board[row][col] else None
-                                        move_notation = get_chess_notation(selected_piece, from_pos, to_pos, captured_piece)
-                                        st.session_state.move_history.append(f"{len(st.session_state.move_history) + 1}. {move_notation}")
-                                        
-                                        st.session_state.last_move = ((selected_row, selected_col), (row, col))
-                                        st.session_state.turn = 'black'
-                                        
-                                        # Update FEN state
-                                        update_fen_state(st.session_state.board, (row, col), selected_piece, 'white')
-                                        
-                                        # Check for game over
-                                        if is_checkmate(st.session_state.board, st.session_state.turn):
-                                            st.session_state.game_over = True
-                                            st.error("Checkmate! Black loses!")
-                                        elif is_in_check(st.session_state.board, st.session_state.turn):
-                                            st.warning("Black is in check!")
-                                        
-                                    st.session_state.selected_piece = None
-                                    st.rerun()
+                                # Handle castling
+                                if selected_piece.piece_type == 'king' and abs(selected_col - col) == 2:
+                                    if col > selected_col:  # King-side castling
+                                        rook = st.session_state.board[row][7]
+                                        if can_castle(st.session_state.board, selected_piece, rook):
+                                            st.session_state.board[row][5] = rook
+                                            rook.update_position((row, 5))
+                                            st.session_state.board[row][7] = None
+                                    else:  # Queen-side castling
+                                        rook = st.session_state.board[row][0]
+                                        if can_castle(st.session_state.board, selected_piece, rook):
+                                            st.session_state.board[row][3] = rook
+                                            rook.update_position((row, 3))
+                                            st.session_state.board[row][0] = None
+                                
+                                # Record move with proper chess notation
+                                from_pos = (selected_row, selected_col)
+                                to_pos = (row, col)
+                                captured_piece = st.session_state.board[row][col] if st.session_state.board[row][col] else None
+                                move_notation = get_chess_notation(selected_piece, from_pos, to_pos, captured_piece)
+                                st.session_state.move_history.append(f"{len(st.session_state.move_history) + 1}. {move_notation}")
+                                
+                                st.session_state.last_move = ((selected_row, selected_col), (row, col))
+                                st.session_state.turn = 'black'
+                                
+                                # Update FEN state
+                                update_fen_state(st.session_state.board, (row, col), selected_piece, 'white')
+                                
+                                # Check for game over
+                                if is_checkmate(st.session_state.board, st.session_state.turn):
+                                    st.session_state.game_over = True
+                                    st.error("Checkmate! Black loses!")
+                                elif is_in_check(st.session_state.board, st.session_state.turn):
+                                    st.warning("Black is in check!")
+                                
+                            st.session_state.selected_piece = None
+                            st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
 
