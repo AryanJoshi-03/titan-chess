@@ -15,48 +15,96 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
+# Custom CSS for modern, cute styling
 st.markdown("""
 <style>
+    /* Main page styling */
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 1200px;
+    }
+    
+    /* Header styling */
     .main-header {
         text-align: center;
         color: #2E8B57;
-        font-size: 3rem;
+        font-size: 2.5rem;
         font-weight: bold;
         margin-bottom: 0.5rem;
     }
     .sub-header {
         text-align: center;
         color: #666;
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         margin-bottom: 2rem;
     }
+    
+    /* Chess board styling */
     .chess-board {
         background: transparent;
         border-radius: 0px;
-        padding: 10px;
+        padding: 15px;
         box-shadow: none;
         border: 3px solid #8B4513;
         display: inline-block;
+        margin: 20px auto;
     }
-    .game-info {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 10px;
+    
+    /* Card styling for panels */
+    .game-card {
+        background: white;
+        border-radius: 15px;
         padding: 20px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        border: 1px solid #e0e0e0;
     }
-    .move-history {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 15px;
-        max-height: 400px;
-        overflow-y: auto;
+    
+    .turn-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        border: 1px solid #e0e0e0;
+        text-align: center;
     }
+    
+    .move-history-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        border: 1px solid #e0e0e0;
+    }
+    
+    /* Button styling */
+    .new-game-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-size: 16px;
+        font-weight: bold;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s ease;
+    }
+    
+    .new-game-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+    
+    /* Status messages */
     .status-message {
-        padding: 10px;
-        border-radius: 5px;
+        padding: 12px;
+        border-radius: 10px;
         margin: 10px 0;
         font-weight: bold;
+        text-align: center;
     }
     .check-warning {
         background-color: #fff3cd;
@@ -72,6 +120,22 @@ st.markdown("""
         background-color: #d1ecf1;
         border: 1px solid #bee5eb;
         color: #0c5460;
+    }
+    
+    /* Turn indicator */
+    .turn-indicator {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .white-turn {
+        color: #2E8B57;
+    }
+    
+    .black-turn {
+        color: #8B4513;
     }
     /* Custom button styling for chess squares */
     .stButton > button {
@@ -825,10 +889,17 @@ def make_ai_move():
                         rook.update_position((rook_row, rook_end_col))
                         st.session_state.board[rook_row][rook_start_col] = None
                     
+                    # Record move with proper chess notation
+                    from_pos = (start_row, start_col)
+                    to_pos = (end_row, end_col)
+                    captured_piece = st.session_state.board[end_row][end_col] if st.session_state.board[end_row][end_col] else None
+                    move_notation = get_chess_notation(piece, from_pos, to_pos, captured_piece)
+                    if not hasattr(st.session_state, 'move_history'):
+                        st.session_state.move_history = []
+                    st.session_state.move_history.append(f"{len(st.session_state.move_history) + 1}. {move_notation}")
+                    
                     # Update FEN state
                     update_fen_state(st.session_state.board, target_position, piece, 'black')
-                    
-                    
                     
                     st.session_state.turn = 'white'
                     
@@ -855,14 +926,32 @@ if 'board' not in st.session_state:
     st.session_state.last_move = None
     st.session_state.selected_piece = None
     st.session_state.game_over = False
+    st.session_state.move_history = []
 
 
-# Create two columns - make board smaller
-col1, col2 = st.columns([2, 1])
+# Create three columns for the cute layout
+col1, col2, col3 = st.columns([1, 2, 1])
 
 with col1:
+    # Turn indicator card
+    st.markdown('<div class="turn-card">', unsafe_allow_html=True)
+    turn_color = "🟢" if st.session_state.turn == 'white' else "🔴"
+    turn_class = "white-turn" if st.session_state.turn == 'white' else "black-turn"
+    st.markdown(f'<div class="turn-indicator {turn_class}">{turn_color} {st.session_state.turn.title()}\'s Turn</div>', unsafe_allow_html=True)
+    
+    # New Game button
+    if st.button("🔄 New Game", use_container_width=True, key="new_game_left"):
+        st.session_state.board = initialize_board()
+        st.session_state.turn = 'white'
+        st.session_state.last_move = None
+        st.session_state.selected_piece = None
+        st.session_state.game_over = False
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col2:
+    # Chess board in center
     st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
-    st.subheader("♔ Chess Board")
     st.markdown('<div class="chess-board">', unsafe_allow_html=True)
     
     # Create a visual chess board using Streamlit columns with proper styling
@@ -952,6 +1041,15 @@ with col1:
                                     
 
                                     
+                                    # Record move with proper chess notation
+                                    from_pos = (selected_row, selected_col)
+                                    to_pos = (row, col)
+                                    captured_piece = st.session_state.board[row][col] if st.session_state.board[row][col] else None
+                                    move_notation = get_chess_notation(selected_piece, from_pos, to_pos, captured_piece)
+                                    if not hasattr(st.session_state, 'move_history'):
+                                        st.session_state.move_history = []
+                                    st.session_state.move_history.append(f"{len(st.session_state.move_history) + 1}. {move_notation}")
+                                    
                                     st.session_state.last_move = ((selected_row, selected_col), (row, col))
                                     st.session_state.turn = 'black'
                                     
@@ -971,13 +1069,23 @@ with col1:
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-with col2:
-    st.markdown('<div class="game-info">', unsafe_allow_html=True)
-    st.subheader("🎮 Game Info")
+with col3:
+    # Move history card
+    st.markdown('<div class="move-history-card">', unsafe_allow_html=True)
+    st.subheader("📜 Move History")
     
-    # Current turn
-    turn_color = "🟢" if st.session_state.turn == 'white' else "🔴"
-    st.write(f"**Current Turn:** {turn_color} {st.session_state.turn.title()}")
+    # Show move history
+    if hasattr(st.session_state, 'move_history') and st.session_state.move_history:
+        for move in st.session_state.move_history[-10:]:  # Show last 10 moves
+            st.write(move)
+    else:
+        st.write("No moves yet")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Game info card
+    st.markdown('<div class="game-card">', unsafe_allow_html=True)
+    st.subheader("🎮 Game Info")
     
     # Selected piece info
     if st.session_state.selected_piece:
@@ -997,23 +1105,6 @@ with col2:
         st.markdown('<div class="status-message checkmate-danger">Game Over!</div>', unsafe_allow_html=True)
     elif is_in_check(st.session_state.board, st.session_state.turn):
         st.markdown('<div class="status-message check-warning">⚠️ Check!</div>', unsafe_allow_html=True)
-    
-
-    
-    # New game button
-    if st.button("🔄 New Game", use_container_width=True):
-        st.session_state.board = initialize_board()
-        st.session_state.turn = 'white'
-        st.session_state.last_move = None
-        st.session_state.selected_piece = None
-        st.session_state.game_over = False
-    
-        # Reset FEN state
-        castling_rights = 'KQkq'
-        en_passant = '-'
-        halfmove_clock = 0
-        fullmove_number = 1
-        st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
 

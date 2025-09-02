@@ -1,4 +1,4 @@
-t cimport pygame
+import pygame
 import sys
 import copy
 import os
