@@ -316,10 +316,14 @@ class ChessGame {
     }
 
     isLegalMove(fromRow, fromCol, toRow, toCol) {
-        // Make temporary move
+        // Make temporary move - EXACT SAME AS PYTHON
         const tempBoard = JSON.parse(JSON.stringify(this.board));
-        tempBoard[toRow][toCol] = tempBoard[fromRow][fromCol];
+        const piece = tempBoard[fromRow][fromCol];
+        if (!piece) return false;
+        
+        tempBoard[toRow][toCol] = piece;
         tempBoard[fromRow][fromCol] = null;
+        piece.position = [toRow, toCol]; // Update position in temp board
 
         // Check if king is in check
         return !this.isKingInCheck(tempBoard, this.turn);
@@ -339,12 +343,33 @@ class ChessGame {
 
         if (!kingPos) return false;
 
-        // Check if any enemy piece can attack the king
+        // Check if any enemy piece can attack the king - EXACT SAME AS PYTHON
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 const piece = board[row][col];
                 if (piece && piece.color !== color) {
-                    const moves = this.getBasicMoves(row, col, board);
+                    // Use the piece's actual move generation
+                    let moves = [];
+                    switch (piece.type) {
+                        case 'pawn':
+                            moves = this.pawnMovesBasic(piece, board);
+                            break;
+                        case 'knight':
+                            moves = this.knightMovesBasic(piece, board);
+                            break;
+                        case 'bishop':
+                            moves = this.bishopMovesBasic(piece, board);
+                            break;
+                        case 'rook':
+                            moves = this.rookMovesBasic(piece, board);
+                            break;
+                        case 'queen':
+                            moves = this.queenMovesBasic(piece, board);
+                            break;
+                        case 'king':
+                            moves = this.kingMovesBasic(piece, board);
+                            break;
+                    }
                     if (moves.some(move => move.row === kingPos.row && move.col === kingPos.col)) {
                         return true;
                     }
@@ -538,12 +563,17 @@ class ChessGame {
         const piece = this.board[from.row][from.col];
         const capturedPiece = this.board[to.row][to.col];
 
+        if (!piece) {
+            console.error('No piece at source position');
+            return;
+        }
+
         // Handle castling
         if (piece.type === 'king' && Math.abs(from.col - to.col) === 2) {
             this.handleCastling(from, to);
         }
 
-        // Move piece
+        // Move piece - EXACT SAME AS PYTHON
         this.board[to.row][to.col] = piece;
         this.board[from.row][from.col] = null;
         piece.position = [to.row, to.col];
