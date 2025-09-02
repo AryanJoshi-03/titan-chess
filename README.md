@@ -1,135 +1,92 @@
-# ♔ TitanChess - Elite AI Chess Platform
+# TitanChess - Elite AI Chess Platform
 
-A modern, web-based chess game built with HTML5 Canvas and JavaScript, featuring a sophisticated AI opponent and complete chess rule implementation.
+A professional chess application built with Python and Pygame, featuring Stockfish AI integration and complete chess rule implementation.
 
-## 🎮 Live Demo
+## 🎯 Features
 
-**Play the game directly in your browser:** [TitanChess Demo](https://AryanJoshi-03.github.io/titanchess)
-
-## ✨ Features
-
-- **Full Chess Rules**: Complete implementation of all chess rules including castling, en passant, and pawn promotion
-- **AI Opponent**: Intelligent AI that plays at a competitive level
-- **Modern UI**: Clean, responsive design that works on all devices
-- **Move Validation**: Advanced move legality checking with check/checkmate detection
-- **Move History**: Complete game record with algebraic notation
-- **Professional Design**: Beautiful, recruiter-friendly interface
+- **Complete Chess Engine**: Full implementation of all chess rules including castling, en passant, and pawn promotion
+- **Stockfish AI Integration**: Play against a world-class chess engine
+- **Professional UI**: Beautiful chess board with actual piece images
+- **Real-time Game Status**: Visual feedback for check, checkmate, and game states
+- **Advanced Chess Logic**: Legal move validation, check detection, and game state management
 
 ## 🚀 Quick Start
 
+### Prerequisites
+- Python 3.8 or higher
+- Stockfish chess engine
+
+### Installation
+
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/AryanJoshi-03/titanchess.git
-   cd titanchess
+   git clone https://github.com/AryanJoshi-03/titan-chess.git
+   cd titan-chess
    ```
 
-2. **Open in browser:**
-   - Simply open `index.html` in any modern web browser
-   - No installation or dependencies required!
-
-## 🌐 Deploy to GitHub Pages
-
-### Option 1: Automatic Deployment (Recommended)
-
-1. **Create a new GitHub repository** named `titanchess`
-2. **Upload all files** to the repository:
-   - `index.html`
-   - `styles.css`
-   - `chess.js`
-   - `README.md`
-3. **Enable GitHub Pages:**
-   - Go to repository Settings → Pages
-   - Source: Deploy from a branch
-   - Branch: main (or master)
-   - Click Save
-4. **Your game will be live at:** `https://AryanJoshi-03.github.io/titanchess`
-
-### Option 2: Manual Deployment
-
-1. **Create a new branch called `gh-pages`:**
+2. **Install dependencies:**
    ```bash
-   git checkout -b gh-pages
-   git push origin gh-pages
+   pip install -r requirements.txt
    ```
 
-2. **Enable GitHub Pages** with the `gh-pages` branch as source
+3. **Install Stockfish:**
+   - **macOS**: `brew install stockfish`
+   - **Windows**: Download from [stockfishchess.org](https://stockfishchess.org/download/)
+   - **Linux**: `sudo apt-get install stockfish`
 
-## 📱 Resume Integration
+4. **Run the application:**
+   ```bash
+   python3 Chessboard_Implementation.py
+   ```
 
-Add this link to your resume:
-```
-TitanChess: https://AryanJoshi-03.github.io/titanchess
-```
+## 🎮 How to Play
 
-**Resume Description:**
-```
-TitanChess: Elite AI Chess Platform | Dec 2023 – Jul 2024
-• Achieved a 100% win rate in 50 AI-vs-human simulations, outperforming players up to 2500 ELO
-• Engineered a robust web-based chess system with seamless AI integration, dynamic move validation, 
-  strict rules enforcement (castling, en passant, promotion), and a fully interactive interface
-```
+- **Click** on a piece to select it
+- **Click** on a valid destination square to move
+- **Green highlights** show valid moves
+- **Yellow highlight** shows selected piece
+- Play against the Stockfish AI engine
 
 ## 🛠️ Technical Implementation
 
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **Graphics**: HTML5 Canvas for smooth piece rendering
-- **AI Engine**: Custom chess AI with move evaluation and validation
-- **Responsive Design**: Mobile-first approach with CSS Grid and Flexbox
-- **No Dependencies**: Pure vanilla JavaScript for maximum compatibility
+### Core Technologies
+- **Python 3.11**: Main programming language
+- **Pygame**: Game engine and graphics rendering
+- **Stockfish**: Chess engine integration via python-chess
+- **FEN Notation**: Board state representation
+- **UCI Protocol**: Chess engine communication
 
-## 🎯 Game Controls
+### Key Features
+- **Minimax Algorithm**: AI move generation with alpha-beta pruning
+- **Piece-Square Tables**: Advanced position evaluation
+- **Legal Move Validation**: Complete chess rule enforcement
+- **Game State Management**: Check, checkmate, and stalemate detection
 
-- **Click** to select a piece
-- **Click** on highlighted squares to move
-- **New Game** button to restart
-- **Move History** shows all moves in algebraic notation
+## 📁 Project Structure
 
-## 🔧 Customization
-
-### Changing Colors
-Edit `styles.css` to modify the color scheme:
-```css
-:root {
-  --primary-color: #1e3c72;
-  --secondary-color: #2a5298;
-  --light-square: #f0d9b5;
-  --dark-square: #b58863;
-}
+```
+titan-chess/
+├── Chessboard_Implementation.py  # Main chess application
+├── pieces/                       # Chess piece images
+│   ├── white-*.png
+│   └── black-*.png
+├── requirements.txt              # Python dependencies
+└── README.md                    # This file
 ```
 
-### Adjusting AI Difficulty
-Modify the AI evaluation function in `chess.js`:
-```javascript
-evaluateMove(fromRow, fromCol, toRow, toCol) {
-    // Adjust these values to change AI behavior
-    const captureBonus = 10;
-    const positionBonus = 0.1;
-    // ... rest of function
-}
-```
+## 🎯 Resume Highlights
 
-## 📊 Performance
+This project demonstrates:
+- **Advanced Python Programming**: Object-oriented design, complex algorithms
+- **Game Development**: Pygame graphics, user interaction, game loops
+- **AI Integration**: Stockfish engine integration, minimax algorithm
+- **Chess Engine Development**: Complete rule implementation, position evaluation
+- **Software Engineering**: Clean code architecture, modular design
 
-- **Load Time**: < 1 second
-- **Memory Usage**: < 10MB
-- **Compatibility**: All modern browsers (Chrome, Firefox, Safari, Edge)
-- **Mobile**: Fully responsive with touch support
+## 🔧 Development
 
-## 🤝 Contributing
-
-Feel free to submit issues and enhancement requests!
+Built by Aryan Joshi as a demonstration of advanced Python programming, game development, and AI integration skills.
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
-
-## 🏆 Achievements
-
-- **100% Win Rate** in 50 AI-vs-human simulations
-- **2500+ ELO Performance** against human players
-- **Complete Rule Implementation** including advanced chess concepts
-- **Professional UI/UX** designed for recruiter engagement
-
----
-
-**Built with ❤️ for showcasing technical skills and chess expertise** 
+This project is open source and available under the MIT License.
