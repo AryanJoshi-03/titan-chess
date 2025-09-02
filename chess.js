@@ -141,23 +141,23 @@ class ChessGame {
         const direction = piece.color === 'white' ? -1 : 1;
         const startRow = piece.color === 'white' ? 6 : 1;
 
-        // Single square move
+        // Move forward - EXACT SAME AS PYTHON
         if (this.isValidSquare(row + direction, col, piece.color) && !this.board[row + direction][col]) {
             moves.push({row: row + direction, col: col});
-            
-            // Two square move from start
-            if (row === startRow && !this.board[row + 2 * direction][col]) {
+            // Check if it's at the starting position and can move two squares
+            if (row === startRow && this.isValidSquare(row + 2 * direction, col, piece.color) && 
+                !this.board[row + direction][col] && !this.board[row + 2 * direction][col]) {
                 moves.push({row: row + 2 * direction, col: col});
             }
         }
 
-        // Diagonal captures
+        // Capturing moves - EXACT SAME AS PYTHON
         for (const offset of [-1, 1]) {
-            const newCol = col + offset;
-            if (newCol >= 0 && newCol < 8) {
-                const targetPiece = this.board[row + direction][newCol];
-                if (targetPiece && targetPiece.color !== piece.color) {
-                    moves.push({row: row + direction, col: newCol});
+            const captureCol = col + offset;
+            if (captureCol >= 0 && captureCol < 8) {
+                const captureSquare = this.board[row + direction][captureCol];
+                if (captureSquare && captureSquare.color !== piece.color) {
+                    moves.push({row: row + direction, col: captureCol});
                 }
             }
         }
@@ -169,10 +169,8 @@ class ChessGame {
     knightMoves(piece) {
         const moves = [];
         const [row, col] = piece.position;
-        const possibleMoves = [
-            [-2, -1], [-2, 1], [-1, -2], [-1, 2],
-            [2, -1], [2, 1], [1, 2], [1, -2]
-        ];
+        // EXACT SAME POSSIBLE MOVES AS PYTHON
+        const possibleMoves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (2, -1), (2, 1), (1, 2), (1, -2)];
 
         for (const [r, c] of possibleMoves) {
             const newRow = row + r;
@@ -189,12 +187,12 @@ class ChessGame {
     bishopMoves(piece) {
         const moves = [];
         const [row, col] = piece.position;
-        const directions = [[1, 1], [-1, 1], [1, -1], [-1, -1]];
+        const possibleMoves = [(1, 1), (-1, 1), (1, -1), (-1, -1)];
 
-        for (const [r, c] of directions) {
+        for (const [r, c] of possibleMoves) {
             let newRow = row + r;
             let newCol = col + c;
-            
+
             while (this.isValidSquare(newRow, newCol, piece.color)) {
                 if (!this.board[newRow][newCol]) {
                     moves.push({row: newRow, col: newCol});
@@ -216,12 +214,12 @@ class ChessGame {
     rookMoves(piece) {
         const moves = [];
         const [row, col] = piece.position;
-        const directions = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+        const possibleMoves = [(1, 0), (0, 1), (-1, 0), (0, -1)];
 
-        for (const [r, c] of directions) {
+        for (const [r, c] of possibleMoves) {
             let newRow = row + r;
             let newCol = col + c;
-            
+
             while (this.isValidSquare(newRow, newCol, piece.color)) {
                 if (!this.board[newRow][newCol]) {
                     moves.push({row: newRow, col: newCol});
@@ -243,15 +241,15 @@ class ChessGame {
     queenMoves(piece) {
         const moves = [];
         const [row, col] = piece.position;
-        const directions = [
-            [1, 0], [0, 1], [-1, 0], [0, -1],
-            [1, 1], [-1, 1], [1, -1], [-1, -1]
+        const possibleMoves = [
+            (1, 0), (0, 1), (-1, 0), (0, -1),
+            (1, 1), (-1, 1), (1, -1), (-1, -1)
         ];
 
-        for (const [r, c] of directions) {
+        for (const [r, c] of possibleMoves) {
             let newRow = row + r;
             let newCol = col + c;
-            
+
             while (this.isValidSquare(newRow, newCol, piece.color)) {
                 if (!this.board[newRow][newCol]) {
                     moves.push({row: newRow, col: newCol});
@@ -273,28 +271,16 @@ class ChessGame {
     kingMoves(piece) {
         const moves = [];
         const [row, col] = piece.position;
-        const directions = [
-            [1, 0], [0, 1], [-1, 0], [0, -1],
-            [1, 1], [-1, 1], [1, -1], [-1, -1]
+        const possibleMoves = [
+            (1, 0), (0, 1), (-1, 0), (0, -1),
+            (1, 1), (-1, 1), (1, -1), (-1, -1)
         ];
 
-        for (const [r, c] of directions) {
+        for (const [r, c] of possibleMoves) {
             const newRow = row + r;
             const newCol = col + c;
             if (this.isValidSquare(newRow, newCol, piece.color)) {
                 moves.push({row: newRow, col: newCol});
-            }
-        }
-
-        // Add castling moves
-        if (!piece.hasMoved) {
-            // King-side castling
-            if (this.canCastle(piece, this.board[row][7])) {
-                moves.push({row: row, col: 6});
-            }
-            // Queen-side castling
-            if (this.canCastle(piece, this.board[row][0])) {
-                moves.push({row: row, col: 2});
             }
         }
 
