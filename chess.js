@@ -325,8 +325,133 @@ class ChessGame {
         tempBoard[fromRow][fromCol] = null;
         piece.position = [toRow, toCol]; // Update position in temp board
 
-        // Check if king is in check
-        return !this.isKingInCheck(tempBoard, this.turn);
+        // Check if king is in check - simplified version
+        return !this.isKingInCheckSimple(tempBoard, this.turn);
+    }
+    
+    isKingInCheckSimple(board, color) {
+        let kingPos = null;
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                if (board[row][col] && board[row][col].type === 'king' && board[row][col].color === color) {
+                    kingPos = {row, col};
+                    break;
+                }
+            }
+            if (kingPos) break;
+        }
+
+        if (!kingPos) return false;
+
+        // Check if any enemy piece can attack the king - simplified
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const piece = board[row][col];
+                if (piece && piece.color !== color) {
+                    const moves = this.getBasicMoves(piece, board);
+                    if (moves.some(move => move.row === kingPos.row && move.col === kingPos.col)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    getBasicMoves(piece, board) {
+        const [row, col] = piece.position;
+        const moves = [];
+        
+        switch (piece.type) {
+            case 'pawn':
+                const direction = piece.color === 'white' ? -1 : 1;
+                // Single move forward
+                if (row + direction >= 0 && row + direction < 8 && !board[row + direction][col]) {
+                    moves.push({row: row + direction, col: col});
+                }
+                // Diagonal captures
+                for (const offset of [-1, 1]) {
+                    const newCol = col + offset;
+                    if (newCol >= 0 && newCol < 8 && row + direction >= 0 && row + direction < 8) {
+                        const targetPiece = board[row + direction][newCol];
+                        if (targetPiece && targetPiece.color !== piece.color) {
+                            moves.push({row: row + direction, col: newCol});
+                        }
+                    }
+                }
+                break;
+            case 'knight':
+                const knightMoves = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+                for (const [dr, dc] of knightMoves) {
+                    const newRow = row + dr;
+                    const newCol = col + dc;
+                    if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                        const targetPiece = board[newRow][newCol];
+                        if (!targetPiece || targetPiece.color !== piece.color) {
+                            moves.push({row: newRow, col: newCol});
+                        }
+                    }
+                }
+                break;
+            case 'bishop':
+                for (const [dr, dc] of [[1,1],[1,-1],[-1,1],[-1,-1]]) {
+                    for (let i = 1; i < 8; i++) {
+                        const newRow = row + dr * i;
+                        const newCol = col + dc * i;
+                        if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
+                        const targetPiece = board[newRow][newCol];
+                        if (targetPiece) {
+                            if (targetPiece.color !== piece.color) moves.push({row: newRow, col: newCol});
+                            break;
+                        }
+                        moves.push({row: newRow, col: newCol});
+                    }
+                }
+                break;
+            case 'rook':
+                for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+                    for (let i = 1; i < 8; i++) {
+                        const newRow = row + dr * i;
+                        const newCol = col + dc * i;
+                        if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
+                        const targetPiece = board[newRow][newCol];
+                        if (targetPiece) {
+                            if (targetPiece.color !== piece.color) moves.push({row: newRow, col: newCol});
+                            break;
+                        }
+                        moves.push({row: newRow, col: newCol});
+                    }
+                }
+                break;
+            case 'queen':
+                for (const [dr, dc] of [[1,1],[1,-1],[-1,1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]]) {
+                    for (let i = 1; i < 8; i++) {
+                        const newRow = row + dr * i;
+                        const newCol = col + dc * i;
+                        if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
+                        const targetPiece = board[newRow][newCol];
+                        if (targetPiece) {
+                            if (targetPiece.color !== piece.color) moves.push({row: newRow, col: newCol});
+                            break;
+                        }
+                        moves.push({row: newRow, col: newCol});
+                    }
+                }
+                break;
+            case 'king':
+                for (const [dr, dc] of [[1,1],[1,-1],[-1,1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]]) {
+                    const newRow = row + dr;
+                    const newCol = col + dc;
+                    if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                        const targetPiece = board[newRow][newCol];
+                        if (!targetPiece || targetPiece.color !== piece.color) {
+                            moves.push({row: newRow, col: newCol});
+                        }
+                    }
+                }
+                break;
+        }
+        return moves;
     }
 
     isKingInCheck(board, color) {
