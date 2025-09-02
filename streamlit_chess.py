@@ -42,11 +42,11 @@ st.markdown("""
     
     /* Chess board styling */
     .chess-board {
-        background: transparent;
-        border-radius: 0px;
-        padding: 15px;
-        box-shadow: none;
-        border: 3px solid #8B4513;
+        background: #8B4513;
+        border-radius: 8px;
+        padding: 8px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        border: 2px solid #654321;
         display: inline-block;
         margin: 20px auto;
     }
@@ -139,10 +139,10 @@ st.markdown("""
     }
     /* Custom button styling for chess squares */
     .stButton > button {
-        width: 80px !important;
-        height: 80px !important;
-        font-size: 60px !important;
-        border: 1px solid #8B4513 !important;
+        width: 70px !important;
+        height: 70px !important;
+        font-size: 50px !important;
+        border: none !important;
         border-radius: 0px !important;
         margin: 0px !important;
         display: flex !important;
@@ -153,8 +153,9 @@ st.markdown("""
         font-weight: bold !important;
         transition: all 0.2s ease !important;
         padding: 0 !important;
-        min-height: 80px !important;
-        min-width: 80px !important;
+        min-height: 70px !important;
+        min-width: 70px !important;
+        box-shadow: none !important;
     }
     
     .stButton > button:hover {
@@ -168,12 +169,17 @@ st.markdown("""
         color: #F0D9B5 !important;
     }
     
+    /* Better piece visibility */
+    .stButton > button {
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important;
+    }
+    
     /* Ensure proper spacing between squares */
     .stButton {
         margin: 0 !important;
         padding: 0 !important;
-        width: 80px !important;
-        height: 80px !important;
+        width: 70px !important;
+        height: 70px !important;
     }
     
     /* Override Streamlit's default button styling */
