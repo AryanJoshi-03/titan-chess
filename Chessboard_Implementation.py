@@ -20,7 +20,7 @@ HIGHLIGHT_COLOR = (0, 255, 0)
 
 # Create the game window
 screen = pygame.display.set_mode(size)
-pygame.display.set_caption("Chess")
+pygame.display.set_caption("TitanChess - Elite AI Chess Platform")
 
 # Define square size first
 square_size = 100
@@ -68,6 +68,25 @@ def draw_pieces(screen, board):
 
 def draw_highlight(screen, row, col):
     pygame.draw.rect(screen, HIGHLIGHT_COLOR, (col * square_size, row * square_size, square_size, square_size), 5)
+
+def draw_game_status(screen, turn, game_over, check_status):
+    """Draw game status information"""
+    font = pygame.font.Font(None, 36)
+    
+    # Current turn
+    turn_text = f"Current Turn: {turn.title()}"
+    turn_surface = font.render(turn_text, True, WHITE)
+    screen.blit(turn_surface, (10, 10))
+    
+    # Game status
+    if game_over:
+        status_text = "Game Over!"
+        status_surface = font.render(status_text, True, (255, 0, 0))
+        screen.blit(status_surface, (10, 50))
+    elif check_status:
+        status_text = f"{turn.title()} is in check!"
+        status_surface = font.render(status_text, True, (255, 255, 0))
+        screen.blit(status_surface, (10, 50))
 
 def get_square_under_mouse():
     mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
@@ -811,6 +830,10 @@ while True:
         draw_highlight(screen, selected_piece[0], selected_piece[1])
         for move in highlighted_moves:
             draw_highlight(screen, move[0], move[1])
+
+    # Draw game status
+    check_status = is_in_check(board, turn)
+    draw_game_status(screen, turn, not running, check_status)
 
     pygame.display.flip()
 
