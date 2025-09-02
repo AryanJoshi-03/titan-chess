@@ -34,8 +34,10 @@ st.markdown("""
     .chess-board {
         background: transparent;
         border-radius: 0px;
-        padding: 0px;
+        padding: 10px;
         box-shadow: none;
+        border: 3px solid #8B4513;
+        display: inline-block;
     }
     .game-info {
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -73,11 +75,11 @@ st.markdown("""
     }
     /* Custom button styling for chess squares */
     .stButton > button {
-        width: 60px !important;
-        height: 60px !important;
-        font-size: 36px !important;
+        width: 80px !important;
+        height: 80px !important;
+        font-size: 60px !important;
         border: 1px solid #8B4513 !important;
-        border-radius: 2px !important;
+        border-radius: 0px !important;
         margin: 0px !important;
         display: flex !important;
         align-items: center !important;
@@ -87,8 +89,8 @@ st.markdown("""
         font-weight: bold !important;
         transition: all 0.2s ease !important;
         padding: 0 !important;
-        min-height: 60px !important;
-        min-width: 60px !important;
+        min-height: 80px !important;
+        min-width: 80px !important;
     }
     
     .stButton > button:hover {
@@ -106,8 +108,8 @@ st.markdown("""
     .stButton {
         margin: 0 !important;
         padding: 0 !important;
-        width: 60px !important;
-        height: 60px !important;
+        width: 80px !important;
+        height: 80px !important;
     }
     
     /* Override Streamlit's default button styling */
@@ -859,8 +861,9 @@ if 'board' not in st.session_state:
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    st.markdown('<div class="chess-board">', unsafe_allow_html=True)
+    st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
     st.subheader("♔ Chess Board")
+    st.markdown('<div class="chess-board">', unsafe_allow_html=True)
     
     # Create a visual chess board using Streamlit columns with proper styling
     # Create 8 rows of the chess board
@@ -958,6 +961,7 @@ with col1:
                                 st.session_state.selected_piece = None
                                 st.rerun()
     
+    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
