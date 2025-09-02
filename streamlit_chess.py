@@ -3,6 +3,99 @@ import numpy as np
 import copy
 import chess
 import chess.engine
+import os
+import subprocess
+import platform
+
+# Configure Streamlit page
+st.set_page_config(
+    page_title="TitanChess - Elite AI Chess Platform",
+    page_icon="♔",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS for better styling
+st.markdown("""
+<style>
+    .main-header {
+        text-align: center;
+        color: #2E8B57;
+        font-size: 3rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    .sub-header {
+        text-align: center;
+        color: #666;
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+    }
+    .chess-board {
+        background: linear-gradient(135deg, #DEB887 0%, #8B4513 100%);
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .game-info {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .move-history {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .status-message {
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        font-weight: bold;
+    }
+    .check-warning {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+    }
+    .checkmate-danger {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+    }
+    .stalemate-info {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+    }
+    .piece-button {
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+        border: 2px solid #333;
+        border-radius: 8px;
+        margin: 2px;
+    }
+    .light-square {
+        background-color: #DEB887;
+    }
+    .dark-square {
+        background-color: #8B4513;
+        color: white;
+    }
+    .selected-square {
+        background-color: #00FF00 !important;
+        border: 3px solid #00AA00 !important;
+    }
+    .valid-move {
+        background-color: #90EE90 !important;
+        border: 2px solid #00AA00 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Your exact chess logic from Chessboard_Implementation.py
 def is_within_boundaries(row, col):
@@ -188,6 +281,244 @@ def get_valid_moves(piece, board, last_move=None):
             legal_moves.append(move)
     return legal_moves
 
+def can_castle(board, king, rook):
+    if king.has_moved or rook.has_moved:
+        return False
+    if king.color != rook.color:
+        return False
+    y = king.position[0]
+    king_x = king.position[1]
+    rook_x = rook.position[1]
+
+    # Check if squares between king and rook are empty
+    if rook_x == 0:  # Queen-side castling
+        for x in range(1, king_x):
+            if board[y][x] is not None:
+                return False
+    elif rook_x == 7:  # King-side castling
+        for x in range(king_x + 1, 7):
+            if board[y][x] is not None:
+                return False
+
+    # Check if squares the king passes through are under attack
+    if rook_x == 0:  # Queen-side castling
+        squares_to_check = [(y, king_x), (y, king_x - 1), (y, king_x - 2)]
+    elif rook_x == 7:  # King-side castling
+        squares_to_check = [(y, king_x), (y, king_x + 1), (y, king_x + 2)]
+
+    for square in squares_to_check:
+        if is_square_under_attack(board, square, king.color):
+            return False
+
+    return True
+
+def is_square_under_attack(board, square, color):
+    enemy_color = 'black' if color == 'white' else 'white'
+    for row in board:
+        for piece in row:
+            if piece and piece.color == enemy_color:
+                if square in piece.get_moves(board):
+                    return True
+    return False
+
+def get_castling_moves(board, king):
+    castling_moves = []
+    y = king.position[0]
+    if king.color == 'white':
+        if can_castle(board, king, board[y][0]):
+            castling_moves.append((y, 2))  # Queen-side
+        if can_castle(board, king, board[y][7]):
+            castling_moves.append((y, 6))  # King-side
+    elif king.color == 'black':
+        if can_castle(board, king, board[y][0]):
+            castling_moves.append((y, 2))  # Queen-side
+        if can_castle(board, king, board[y][7]):
+            castling_moves.append((y, 6))  # King-side
+    return castling_moves
+
+# STOCKFISH INTEGRATION - EXACT SAME AS PYTHON VERSION
+def get_stockfish_path():
+    """Find Stockfish executable path"""
+    possible_paths = [
+        '/usr/local/bin/stockfish',  # Homebrew on Mac
+        '/usr/bin/stockfish',        # Linux
+        'stockfish',                 # In PATH
+        './stockfish',               # Local directory
+    ]
+    
+    for path in possible_paths:
+        try:
+            if os.path.exists(path) or path == 'stockfish':
+                # Test if it works
+                result = subprocess.run([path, 'quit'], 
+                                      capture_output=True, text=True, timeout=1)
+                return path
+        except:
+            continue
+    
+    return None
+
+def board_to_fen(board, turn, castling_rights='KQkq', en_passant='-', halfmove_clock=0, fullmove_number=1):
+    """Convert board to FEN string - EXACT SAME AS PYTHON"""
+    piece_to_fen = {
+        ('white', 'pawn'): 'P',
+        ('white', 'rook'): 'R',
+        ('white', 'knight'): 'N',
+        ('white', 'bishop'): 'B',
+        ('white', 'queen'): 'Q',
+        ('white', 'king'): 'K',
+        ('black', 'pawn'): 'p',
+        ('black', 'rook'): 'r',
+        ('black', 'knight'): 'n',
+        ('black', 'bishop'): 'b',
+        ('black', 'queen'): 'q',
+        ('black', 'king'): 'k',
+    }
+    fen_rows = []
+    for row in board:
+        fen_row = ''
+        empty = 0
+        for piece in row:
+            if piece is None:
+                empty += 1
+            else:
+                if empty > 0:
+                    fen_row += str(empty)
+                    empty = 0
+                fen_row += piece_to_fen[(piece.color, piece.piece_type)]
+        if empty > 0:
+            fen_row += str(empty)
+        fen_rows.append(fen_row)
+    fen = '/'.join(fen_rows)
+    fen += ' ' + ('w' if turn == 'white' else 'b')
+    fen += f' {castling_rights if castling_rights else "-"}'
+    fen += f' {en_passant}'
+    fen += f' {halfmove_clock} {fullmove_number}'
+    return fen
+
+def get_stockfish_move(board, color, castling_rights='KQkq', en_passant='-', halfmove_clock=0, fullmove_number=1):
+    """Get move from Stockfish - EXACT SAME AS PYTHON"""
+    try:
+        fen = board_to_fen(board, color, castling_rights, en_passant, halfmove_clock, fullmove_number)
+        board_obj = chess.Board(fen)
+        
+        stockfish_path = get_stockfish_path()
+        if stockfish_path:
+            with chess.engine.SimpleEngine.popen_uci(stockfish_path) as engine:
+                result = engine.play(board_obj, chess.engine.Limit(time=0.1))
+                move = result.move
+                return move.uci()  # e.g., 'e2e4'
+        else:
+            # Fallback to minimax if Stockfish not available
+            return get_minimax_move(board, color)
+    except Exception as e:
+        st.warning(f"Stockfish error: {e}. Using fallback AI.")
+        return get_minimax_move(board, color)
+
+def get_minimax_move(board, color):
+    """Fallback minimax AI - EXACT SAME AS PYTHON"""
+    best_move = None
+    best_score = float('-inf') if color == 'white' else float('inf')
+    
+    for row in range(8):
+        for col in range(8):
+            piece = board[row][col]
+            if piece and piece.color == color:
+                moves = get_valid_moves(piece, board)
+                for move in moves:
+                    temp_board = copy.deepcopy(board)
+                    temp_piece = temp_board[row][col]
+                    temp_piece.update_position(move)
+                    temp_board[move[0]][move[1]] = temp_piece
+                    temp_board[row][col] = None
+                    
+                    score = evaluate_board(temp_board)
+                    if color == 'white':
+                        if score > best_score:
+                            best_score = score
+                            best_move = ((row, col), move)
+                    else:
+                        if score < best_score:
+                            best_score = score
+                            best_move = ((row, col), move)
+    
+    if best_move:
+        return f"{chr(97 + best_move[0][1])}{8 - best_move[0][0]}{chr(97 + best_move[1][1])}{8 - best_move[1][0]}"
+    return None
+
+def evaluate_board(board):
+    """Board evaluation - EXACT SAME AS PYTHON"""
+    piece_value = {
+        'pawn': 100,
+        'knight': 320,
+        'bishop': 330,
+        'rook': 500,
+        'queen': 900,
+        'king': 20000
+    }
+    
+    score = 0
+    for row in range(8):
+        for col in range(8):
+            piece = board[row][col]
+            if piece:
+                if piece.color == 'white':
+                    score += piece_value[piece.piece_type]
+                else:
+                    score -= piece_value[piece.piece_type]
+    
+    return score
+
+def update_fen_state(board, move, piece, turn):
+    """Update FEN state variables - EXACT SAME AS PYTHON"""
+    global castling_rights, en_passant, halfmove_clock, fullmove_number
+    
+    # Castling rights
+    if piece.piece_type == 'king':
+        if piece.color == 'white':
+            castling_rights = castling_rights.replace('K', '').replace('Q', '')
+        else:
+            castling_rights = castling_rights.replace('k', '').replace('q', '')
+    
+    if piece.piece_type == 'rook':
+        if piece.color == 'white':
+            if piece.position == (7, 0) or move == (7, 0):
+                castling_rights = castling_rights.replace('Q', '')
+            if piece.position == (7, 7) or move == (7, 7):
+                castling_rights = castling_rights.replace('K', '')
+        else:
+            if piece.position == (0, 0) or move == (0, 0):
+                castling_rights = castling_rights.replace('q', '')
+            if piece.position == (0, 7) or move == (0, 7):
+                castling_rights = castling_rights.replace('k', '')
+    
+    if castling_rights == '':
+        castling_rights = '-'
+    
+    # En passant
+    if piece.piece_type == 'pawn' and abs(move[0] - piece.position[0]) == 2:
+        col = move[1]
+        row = (move[0] + piece.position[0]) // 2
+        en_passant = chr(col + ord('a')) + str(8 - row)
+    else:
+        en_passant = '-'
+    
+    # Halfmove clock
+    if piece.piece_type == 'pawn' or board[move[0]][move[1]] is not None:
+        halfmove_clock = 0
+    else:
+        halfmove_clock += 1
+    
+    # Fullmove number
+    if turn == 'black':
+        fullmove_number += 1
+
+# Global FEN state variables
+castling_rights = 'KQkq'
+en_passant = '-'
+halfmove_clock = 0
+fullmove_number = 1
+
 # Initialize board
 def initialize_board():
     board = [
@@ -202,11 +533,89 @@ def initialize_board():
     ]
     return board
 
-# Streamlit UI
-st.set_page_config(page_title="TitanChess - AI Chess Engine", layout="wide")
+def get_piece_symbol(piece):
+    """Get Unicode symbol for piece"""
+    if not piece:
+        return ""
+    
+    symbols = {
+        ('white', 'pawn'): '♙',
+        ('white', 'rook'): '♖',
+        ('white', 'knight'): '♘',
+        ('white', 'bishop'): '♗',
+        ('white', 'queen'): '♕',
+        ('white', 'king'): '♔',
+        ('black', 'pawn'): '♟',
+        ('black', 'rook'): '♜',
+        ('black', 'knight'): '♞',
+        ('black', 'bishop'): '♝',
+        ('black', 'queen'): '♛',
+        ('black', 'king'): '♚',
+    }
+    return symbols.get((piece.color, piece.piece_type), "")
 
-st.title("♔ TitanChess - Elite AI Chess Platform")
-st.markdown("**Play against a Stockfish-powered AI chess engine**")
+def make_ai_move():
+    """Make AI move using Stockfish"""
+    if st.session_state.turn == 'black' and not st.session_state.game_over:
+        with st.spinner("🤖 AI is thinking..."):
+            try:
+                uci_move = get_stockfish_move(st.session_state.board, st.session_state.turn, 
+                                            castling_rights, en_passant, halfmove_clock, fullmove_number)
+                
+                if uci_move:
+                    # Parse UCI move (e.g., 'e2e4')
+                    start_col = ord(uci_move[0]) - ord('a')
+                    start_row = 8 - int(uci_move[1])
+                    end_col = ord(uci_move[2]) - ord('a')
+                    end_row = 8 - int(uci_move[3])
+                    
+                    piece = st.session_state.board[start_row][start_col]
+                    target_position = (end_row, end_col)
+                    
+                    # Move piece
+                    piece.update_position(target_position)
+                    st.session_state.board[end_row][end_col] = piece
+                    st.session_state.board[start_row][start_col] = None
+                    
+                    # Handle castling
+                    if piece.piece_type == 'king' and abs(start_col - end_col) == 2:
+                        if end_col == 6:  # King-side castling
+                            rook_start_col = 7
+                            rook_end_col = 5
+                        elif end_col == 2:  # Queen-side castling
+                            rook_start_col = 0
+                            rook_end_col = 3
+                        
+                        rook_row = start_row
+                        rook = st.session_state.board[rook_row][rook_start_col]
+                        st.session_state.board[rook_row][rook_end_col] = rook
+                        rook.update_position((rook_row, rook_end_col))
+                        st.session_state.board[rook_row][rook_start_col] = None
+                    
+                    # Update FEN state
+                    update_fen_state(st.session_state.board, target_position, piece, 'black')
+                    
+                    # Record move
+                    move_notation = f"{uci_move[0]}{uci_move[1]} → {uci_move[2]}{uci_move[3]}"
+                    st.session_state.move_history.append(f"{len(st.session_state.move_history) + 1}. {move_notation}")
+                    
+                    st.session_state.turn = 'white'
+                    
+                    # Check game state
+                    if is_in_check(st.session_state.board, st.session_state.turn):
+                        st.session_state.game_over = True
+                        st.error("Checkmate! White loses!")
+                    elif is_in_check(st.session_state.board, st.session_state.turn):
+                        st.warning("White is in check!")
+                    
+                    st.rerun()
+                    
+            except Exception as e:
+                st.error(f"AI move error: {e}")
+
+# Streamlit UI
+st.markdown('<h1 class="main-header">♔ TitanChess</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">Elite AI Chess Platform - Play against Stockfish-powered AI</p>', unsafe_allow_html=True)
 
 # Initialize session state
 if 'board' not in st.session_state:
@@ -218,13 +627,11 @@ if 'board' not in st.session_state:
     st.session_state.move_history = []
 
 # Create two columns
-col1, col2 = st.columns([2, 1])
+col1, col2 = st.columns([3, 1])
 
 with col1:
-    st.subheader("Chess Board")
-    
-    # Create the chess board
-    board_container = st.container()
+    st.markdown('<div class="chess-board">', unsafe_allow_html=True)
+    st.subheader("♔ Chess Board")
     
     # Display board as a grid of buttons
     for row in range(8):
@@ -232,19 +639,24 @@ with col1:
         for col in range(8):
             with cols[col]:
                 piece = st.session_state.board[row][col]
-                square_color = "lightblue" if (row + col) % 2 == 0 else "lightgray"
+                square_color = "light-square" if (row + col) % 2 == 0 else "dark-square"
                 
-                if piece:
-                    piece_symbol = {
-                        'pawn': '♟', 'rook': '♜', 'knight': '♞', 
-                        'bishop': '♝', 'queen': '♛', 'king': '♚'
-                    }[piece.piece_type]
-                    piece_display = f"{piece_symbol}"
-                else:
-                    piece_display = ""
+                # Check if this square is selected or a valid move
+                button_class = square_color
+                if st.session_state.selected_piece == (row, col):
+                    button_class += " selected-square"
+                elif st.session_state.selected_piece:
+                    selected_row, selected_col = st.session_state.selected_piece
+                    selected_piece = st.session_state.board[selected_row][selected_col]
+                    valid_moves = get_valid_moves(selected_piece, st.session_state.board, st.session_state.last_move)
+                    if (row, col) in valid_moves:
+                        button_class += " valid-move"
                 
-                if st.button(piece_display, key=f"square_{row}_{col}", 
-                           help=f"Row {row}, Col {col}"):
+                piece_symbol = get_piece_symbol(piece)
+                
+                if st.button(piece_symbol, key=f"square_{row}_{col}", 
+                           help=f"Row {row}, Col {col}",
+                           use_container_width=True):
                     if not st.session_state.game_over:
                         if st.session_state.selected_piece is None:
                             # Select piece
@@ -269,29 +681,56 @@ with col1:
                                     st.session_state.board[selected_row][selected_col] = None
                                     selected_piece.update_position((row, col))
                                     
+                                    # Handle castling
+                                    if selected_piece.piece_type == 'king' and abs(selected_col - col) == 2:
+                                        if col > selected_col:  # King-side castling
+                                            rook = st.session_state.board[row][7]
+                                            if can_castle(st.session_state.board, selected_piece, rook):
+                                                st.session_state.board[row][5] = rook
+                                                rook.update_position((row, 5))
+                                                st.session_state.board[row][7] = None
+                                        else:  # Queen-side castling
+                                            rook = st.session_state.board[row][0]
+                                            if can_castle(st.session_state.board, selected_piece, rook):
+                                                st.session_state.board[row][3] = rook
+                                                rook.update_position((row, 3))
+                                                st.session_state.board[row][0] = None
+                                    
                                     # Record move
                                     move_notation = f"{chr(97 + selected_col)}{8 - selected_row} → {chr(97 + col)}{8 - row}"
                                     st.session_state.move_history.append(f"{len(st.session_state.move_history) + 1}. {move_notation}")
                                     
                                     st.session_state.last_move = ((selected_row, selected_col), (row, col))
-                                    st.session_state.turn = 'black' if st.session_state.turn == 'white' else 'white'
+                                    st.session_state.turn = 'black'
+                                    
+                                    # Update FEN state
+                                    update_fen_state(st.session_state.board, (row, col), selected_piece, 'white')
                                     
                                     # Check for game over
                                     if is_in_check(st.session_state.board, st.session_state.turn):
                                         st.session_state.game_over = True
-                                        st.success(f"Checkmate! {st.session_state.turn} loses!")
+                                        st.error("Checkmate! Black loses!")
+                                    elif is_in_check(st.session_state.board, st.session_state.turn):
+                                        st.warning("Black is in check!")
                                     
                                 st.session_state.selected_piece = None
                                 st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
-    st.subheader("Game Info")
-    st.write(f"**Current Turn:** {st.session_state.turn.title()}")
+    st.markdown('<div class="game-info">', unsafe_allow_html=True)
+    st.subheader("🎮 Game Info")
     
+    # Current turn
+    turn_color = "🟢" if st.session_state.turn == 'white' else "🔴"
+    st.write(f"**Current Turn:** {turn_color} {st.session_state.turn.title()}")
+    
+    # Selected piece info
     if st.session_state.selected_piece:
         row, col = st.session_state.selected_piece
         piece = st.session_state.board[row][col]
-        st.write(f"**Selected:** {piece.piece_type.title()} at {chr(97 + col)}{8 - row}")
+        st.write(f"**Selected:** {get_piece_symbol(piece)} {piece.piece_type.title()} at {chr(97 + col)}{8 - row}")
         
         valid_moves = get_valid_moves(piece, st.session_state.board, st.session_state.last_move)
         st.write(f"**Valid moves:** {len(valid_moves)}")
@@ -300,23 +739,40 @@ with col2:
         if len(valid_moves) > 5:
             st.write(f"... and {len(valid_moves) - 5} more")
     
-    st.subheader("Move History")
+    # Game status
+    if st.session_state.game_over:
+        st.markdown('<div class="status-message checkmate-danger">Game Over!</div>', unsafe_allow_html=True)
+    elif is_in_check(st.session_state.board, st.session_state.turn):
+        st.markdown('<div class="status-message check-warning">⚠️ Check!</div>', unsafe_allow_html=True)
+    
+    # Move history
+    st.subheader("📜 Move History")
+    st.markdown('<div class="move-history">', unsafe_allow_html=True)
     for move in st.session_state.move_history[-10:]:  # Show last 10 moves
         st.write(move)
+    st.markdown('</div>', unsafe_allow_html=True)
     
-    if st.button("New Game"):
+    # New game button
+    if st.button("🔄 New Game", use_container_width=True):
         st.session_state.board = initialize_board()
         st.session_state.turn = 'white'
         st.session_state.last_move = None
         st.session_state.selected_piece = None
         st.session_state.game_over = False
         st.session_state.move_history = []
+        # Reset FEN state
+        castling_rights = 'KQkq'
+        en_passant = '-'
+        halfmove_clock = 0
+        fullmove_number = 1
         st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# AI Move (simplified for demo)
+# AI Move
 if st.session_state.turn == 'black' and not st.session_state.game_over:
-    st.info("🤖 AI is thinking...")
-    # Here you would add your Stockfish AI logic
-    # For now, just switch turns
-    st.session_state.turn = 'white'
-    st.rerun()
+    make_ai_move()
+
+# Footer
+st.markdown("---")
+st.markdown("**TitanChess** - Built with Python, Streamlit, and Stockfish AI Engine")
