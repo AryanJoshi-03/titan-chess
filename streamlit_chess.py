@@ -73,12 +73,12 @@ st.markdown("""
     }
     /* Custom button styling for chess squares */
     .stButton > button {
-        width: 70px !important;
-        height: 70px !important;
-        font-size: 36px !important;
-        border: 2px solid #666 !important;
+        width: 80px !important;
+        height: 80px !important;
+        font-size: 48px !important;
+        border: 2px solid #8B4513 !important;
         border-radius: 4px !important;
-        margin: 1px !important;
+        margin: 2px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -87,16 +87,17 @@ st.markdown("""
         font-weight: bold !important;
         transition: all 0.2s ease !important;
         padding: 0 !important;
-        min-height: 70px !important;
+        min-height: 80px !important;
+        min-width: 80px !important;
     }
     
     .stButton > button:hover {
         transform: scale(1.05) !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
     }
     
-    /* Dark squares - target every other button in each row */
-    .stButton:nth-child(odd) > button {
+    /* Dark squares - use a more specific selector */
+    .stButton:nth-of-type(odd) > button {
         background-color: #B58863 !important;
         color: #F0D9B5 !important;
     }
@@ -105,6 +106,125 @@ st.markdown("""
     .stButton {
         margin: 0 !important;
         padding: 0 !important;
+        width: 80px !important;
+        height: 80px !important;
+    }
+    
+    /* Override Streamlit's default button styling */
+    .stButton > button[kind="secondary"] {
+        background-color: #F0D9B5 !important;
+        color: #B58863 !important;
+    }
+    
+    .stButton:nth-of-type(odd) > button[kind="secondary"] {
+        background-color: #B58863 !important;
+        color: #F0D9B5 !important;
+    }
+    
+    /* Force alternating colors for chess board pattern */
+    /* Row 1: Light, Dark, Light, Dark, Light, Dark, Light, Dark */
+    .stButton:nth-of-type(1) > button, .stButton:nth-of-type(3) > button, 
+    .stButton:nth-of-type(5) > button, .stButton:nth-of-type(7) > button {
+        background-color: #F0D9B5 !important;
+        color: #B58863 !important;
+    }
+    
+    .stButton:nth-of-type(2) > button, .stButton:nth-of-type(4) > button, 
+    .stButton:nth-of-type(6) > button, .stButton:nth-of-type(8) > button {
+        background-color: #B58863 !important;
+        color: #F0D9B5 !important;
+    }
+    
+    /* Row 2: Dark, Light, Dark, Light, Dark, Light, Dark, Light */
+    .stButton:nth-of-type(9) > button, .stButton:nth-of-type(11) > button, 
+    .stButton:nth-of-type(13) > button, .stButton:nth-of-type(15) > button {
+        background-color: #B58863 !important;
+        color: #F0D9B5 !important;
+    }
+    
+    .stButton:nth-of-type(10) > button, .stButton:nth-of-type(12) > button, 
+    .stButton:nth-of-type(14) > button, .stButton:nth-of-type(16) > button {
+        background-color: #F0D9B5 !important;
+        color: #B58863 !important;
+    }
+    
+    /* Continue pattern for all 8 rows... */
+    /* Row 3: Light, Dark, Light, Dark, Light, Dark, Light, Dark */
+    .stButton:nth-of-type(17) > button, .stButton:nth-of-type(19) > button, 
+    .stButton:nth-of-type(21) > button, .stButton:nth-of-type(23) > button {
+        background-color: #F0D9B5 !important;
+        color: #B58863 !important;
+    }
+    
+    .stButton:nth-of-type(18) > button, .stButton:nth-of-type(20) > button, 
+    .stButton:nth-of-type(22) > button, .stButton:nth-of-type(24) > button {
+        background-color: #B58863 !important;
+        color: #F0D9B5 !important;
+    }
+    
+    /* Row 4: Dark, Light, Dark, Light, Dark, Light, Dark, Light */
+    .stButton:nth-of-type(25) > button, .stButton:nth-of-type(27) > button, 
+    .stButton:nth-of-type(29) > button, .stButton:nth-of-type(31) > button {
+        background-color: #B58863 !important;
+        color: #F0D9B5 !important;
+    }
+    
+    .stButton:nth-of-type(26) > button, .stButton:nth-of-type(28) > button, 
+    .stButton:nth-of-type(30) > button, .stButton:nth-of-type(32) > button {
+        background-color: #F0D9B5 !important;
+        color: #B58863 !important;
+    }
+    
+    /* Row 5: Light, Dark, Light, Dark, Light, Dark, Light, Dark */
+    .stButton:nth-of-type(33) > button, .stButton:nth-of-type(35) > button, 
+    .stButton:nth-of-type(37) > button, .stButton:nth-of-type(39) > button {
+        background-color: #F0D9B5 !important;
+        color: #B58863 !important;
+    }
+    
+    .stButton:nth-of-type(34) > button, .stButton:nth-of-type(36) > button, 
+    .stButton:nth-of-type(38) > button, .stButton:nth-of-type(40) > button {
+        background-color: #B58863 !important;
+        color: #F0D9B5 !important;
+    }
+    
+    /* Row 6: Dark, Light, Dark, Light, Dark, Light, Dark, Light */
+    .stButton:nth-of-type(41) > button, .stButton:nth-of-type(43) > button, 
+    .stButton:nth-of-type(45) > button, .stButton:nth-of-type(47) > button {
+        background-color: #B58863 !important;
+        color: #F0D9B5 !important;
+    }
+    
+    .stButton:nth-of-type(42) > button, .stButton:nth-of-type(44) > button, 
+    .stButton:nth-of-type(46) > button, .stButton:nth-of-type(48) > button {
+        background-color: #F0D9B5 !important;
+        color: #B58863 !important;
+    }
+    
+    /* Row 7: Light, Dark, Light, Dark, Light, Dark, Light, Dark */
+    .stButton:nth-of-type(49) > button, .stButton:nth-of-type(51) > button, 
+    .stButton:nth-of-type(53) > button, .stButton:nth-of-type(55) > button {
+        background-color: #F0D9B5 !important;
+        color: #B58863 !important;
+    }
+    
+    .stButton:nth-of-type(50) > button, .stButton:nth-of-type(52) > button, 
+    .stButton:nth-of-type(54) > button, .stButton:nth-of-type(56) > button {
+        background-color: #B58863 !important;
+        color: #F0D9B5 !important;
+    }
+    
+    /* Row 8: Dark, Light, Dark, Light, Dark, Light, Dark, Light */
+    .stButton:nth-of-type(57) > button, .stButton:nth-of-type(59) > button, 
+    .stButton:nth-of-type(61) > button, .stButton:nth-of-type(63) > button {
+        background-color: #B58863 !important;
+        color: #F0D9B5 !important;
+    }
+    
+    .stButton:nth-of-type(58) > button, .stButton:nth-of-type(60) > button, 
+    .stButton:nth-of-type(62) > button, .stButton:nth-of-type(64) > button {
+        background-color: #F0D9B5 !important;
+        color: #B58863 !important;
     }
     
     /* Chess board container */
