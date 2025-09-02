@@ -75,24 +75,35 @@ st.markdown("""
         width: 60px;
         height: 60px;
         font-size: 24px;
-        border: 2px solid #333;
-        border-radius: 8px;
-        margin: 2px;
+        border: 1px solid #666;
+        border-radius: 4px;
+        margin: 1px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     .light-square {
-        background-color: #DEB887;
+        background-color: #F0D9B5 !important;
+        color: #B58863 !important;
     }
     .dark-square {
-        background-color: #8B4513;
-        color: white;
+        background-color: #B58863 !important;
+        color: #F0D9B5 !important;
     }
     .selected-square {
-        background-color: #00FF00 !important;
-        border: 3px solid #00AA00 !important;
+        background-color: #FFFF00 !important;
+        border: 3px solid #FFD700 !important;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
     }
     .valid-move {
         background-color: #90EE90 !important;
         border: 2px solid #00AA00 !important;
+        box-shadow: 0 0 5px rgba(0, 170, 0, 0.3) !important;
+    }
+    .chess-board-container {
+        display: flex;
+        justify-content: center;
+        padding: 20px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -263,6 +274,48 @@ def is_in_check(board, color):
                 if king_position in valid_moves:
                     return True
     return False
+
+def is_checkmate(board, color):
+    """Check if the current player is in checkmate"""
+    if not is_in_check(board, color):
+        return False
+    
+    # Check if any move can get out of check
+    for row in range(8):
+        for col in range(8):
+            piece = board[row][col]
+            if piece and piece.color == color:
+                moves = get_valid_moves(piece, board)
+                for move in moves:
+                    temp_board = copy.deepcopy(board)
+                    temp_piece = temp_board[row][col]
+                    temp_piece.update_position(move)
+                    temp_board[move[0]][move[1]] = temp_piece
+                    temp_board[row][col] = None
+                    if not is_in_check(temp_board, color):
+                        return False
+    return True
+
+def is_stalemate(board, color):
+    """Check if the current player is in stalemate"""
+    if is_in_check(board, color):
+        return False
+    
+    # Check if any legal move exists
+    for row in range(8):
+        for col in range(8):
+            piece = board[row][col]
+            if piece and piece.color == color:
+                moves = get_valid_moves(piece, board)
+                for move in moves:
+                    temp_board = copy.deepcopy(board)
+                    temp_piece = temp_board[row][col]
+                    temp_piece.update_position(move)
+                    temp_board[move[0]][move[1]] = temp_piece
+                    temp_board[row][col] = None
+                    if not is_in_check(temp_board, color):
+                        return False
+    return True
 
 def is_legal_move(board, piece, target_position, last_move=None):
     original_position = piece.position
@@ -554,6 +607,47 @@ def get_piece_symbol(piece):
     }
     return symbols.get((piece.color, piece.piece_type), "")
 
+def get_chess_notation(piece, from_pos, to_pos, captured_piece=None):
+    """Convert move to proper chess notation"""
+    from_col, from_row = from_pos[1], from_pos[0]
+    to_col, to_row = to_pos[1], to_pos[0]
+    
+    # Convert to chess notation (a1, b2, etc.)
+    from_square = chr(97 + from_col) + str(8 - from_row)
+    to_square = chr(97 + to_col) + str(8 - to_row)
+    
+    # Handle different piece types
+    if piece.piece_type == 'pawn':
+        if captured_piece:
+            # Pawn capture (e.g., exd5)
+            notation = from_square[0] + 'x' + to_square
+        else:
+            # Pawn move (e.g., e4)
+            notation = to_square
+    else:
+        # Other pieces
+        piece_letter = piece.piece_type[0].upper()
+        if piece_letter == 'K':
+            piece_letter = 'K'
+        elif piece_letter == 'Q':
+            piece_letter = 'Q'
+        elif piece_letter == 'R':
+            piece_letter = 'R'
+        elif piece_letter == 'B':
+            piece_letter = 'B'
+        elif piece_letter == 'N':
+            piece_letter = 'N'
+        
+        if captured_piece:
+            notation = piece_letter + 'x' + to_square
+        else:
+            notation = piece_letter + to_square
+    
+    # Add check/checkmate indicators
+    # (We'll add this later when we implement proper game state checking)
+    
+    return notation
+
 def make_ai_move():
     """Make AI move using Stockfish"""
     if st.session_state.turn == 'black' and not st.session_state.game_over:
@@ -595,14 +689,17 @@ def make_ai_move():
                     # Update FEN state
                     update_fen_state(st.session_state.board, target_position, piece, 'black')
                     
-                    # Record move
-                    move_notation = f"{uci_move[0]}{uci_move[1]} → {uci_move[2]}{uci_move[3]}"
+                    # Record move with proper chess notation
+                    from_pos = (start_row, start_col)
+                    to_pos = (end_row, end_col)
+                    captured_piece = st.session_state.board[end_row][end_col] if st.session_state.board[end_row][end_col] else None
+                    move_notation = get_chess_notation(piece, from_pos, to_pos, captured_piece)
                     st.session_state.move_history.append(f"{len(st.session_state.move_history) + 1}. {move_notation}")
                     
                     st.session_state.turn = 'white'
                     
                     # Check game state
-                    if is_in_check(st.session_state.board, st.session_state.turn):
+                    if is_checkmate(st.session_state.board, st.session_state.turn):
                         st.session_state.game_over = True
                         st.error("Checkmate! White loses!")
                     elif is_in_check(st.session_state.board, st.session_state.turn):
@@ -696,8 +793,11 @@ with col1:
                                                 rook.update_position((row, 3))
                                                 st.session_state.board[row][0] = None
                                     
-                                    # Record move
-                                    move_notation = f"{chr(97 + selected_col)}{8 - selected_row} → {chr(97 + col)}{8 - row}"
+                                    # Record move with proper chess notation
+                                    from_pos = (selected_row, selected_col)
+                                    to_pos = (row, col)
+                                    captured_piece = st.session_state.board[row][col] if st.session_state.board[row][col] else None
+                                    move_notation = get_chess_notation(selected_piece, from_pos, to_pos, captured_piece)
                                     st.session_state.move_history.append(f"{len(st.session_state.move_history) + 1}. {move_notation}")
                                     
                                     st.session_state.last_move = ((selected_row, selected_col), (row, col))
@@ -707,7 +807,7 @@ with col1:
                                     update_fen_state(st.session_state.board, (row, col), selected_piece, 'white')
                                     
                                     # Check for game over
-                                    if is_in_check(st.session_state.board, st.session_state.turn):
+                                    if is_checkmate(st.session_state.board, st.session_state.turn):
                                         st.session_state.game_over = True
                                         st.error("Checkmate! Black loses!")
                                     elif is_in_check(st.session_state.board, st.session_state.turn):
