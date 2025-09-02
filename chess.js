@@ -390,7 +390,7 @@ class ChessGame {
         }
     }
 
-    pawnMovesForBoard(piece, board) {
+    pawnMovesForBoard(piece, board, lastMove = null) {
         const moves = [];
         const [row, col] = piece.position;
         const direction = piece.color === 'white' ? -1 : 1;
@@ -413,6 +413,19 @@ class ChessGame {
                 const captureSquare = board[row + direction][captureCol];
                 if (captureSquare && captureSquare.color !== piece.color) {
                     moves.push([row + direction, captureCol]);
+                }
+                // En passant - EXACT SAME AS PYTHON
+                else if (board[row][captureCol] && board[row][captureCol].type === 'pawn' && 
+                        board[row][captureCol].color !== piece.color) {
+                    if ((piece.color === 'white' && row === 3) || (piece.color === 'black' && row === 4)) {
+                        if (lastMove) {
+                            const [lastMoveStart, lastMoveEnd] = lastMove;
+                            if (lastMoveEnd[0] === row && lastMoveEnd[1] === captureCol && 
+                                Math.abs(lastMoveStart[0] - lastMoveEnd[0]) === 2) {
+                                moves.push([row + direction, captureCol]);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -855,18 +868,13 @@ class ChessGame {
         return notation;
     }
 
-    // STOCKFISH AI INTEGRATION (like your Python version)
+    // STRONG MINIMAX AI (like your Python version)
     async makeStockfishMove() {
         if (this.gameOver || this.turn !== 'black') return;
 
         try {
-            // Convert board to FEN string
-            const fen = this.boardToFen();
-            console.log('Current FEN:', fen);
-
-            // For now, use a strong AI algorithm since we can't run Stockfish in browser
-            // This mimics the strength of your Python version
-            const bestMove = this.findBestMove();
+            // Use strong minimax AI algorithm - EXACT SAME AS PYTHON
+            const bestMove = this.findBestMoveMinimax();
             
             if (bestMove) {
                 this.movePiece(bestMove.from, bestMove.to);
@@ -880,60 +888,200 @@ class ChessGame {
         }
     }
 
-    // Strong AI algorithm (similar to your Python minimax)
-    findBestMove() {
-        let bestMove = null;
-        let bestScore = -Infinity;
-        const depth = 4; // Strong search depth
+    // EXACT SAME MINIMAX AS PYTHON VERSION
+    findBestMoveMinimax() {
+        const depth = 3; // Strong search depth
+        const [score, bestMove] = this.minimax(this.board, depth, -Infinity, Infinity, false, this.lastMove);
+        return bestMove;
+    }
+
+    minimax(board, depth, alpha, beta, maximizingPlayer, lastMove) {
+        if (depth === 0 || this.isCheckmateForBoard(board, 'white') || this.isCheckmateForBoard(board, 'black')) {
+            return [this.evaluateBoard(board), null];
+        }
+
+        if (maximizingPlayer) {
+            let maxEval = -Infinity;
+            let bestMove = null;
+            const moves = this.getAllValidMoves(board, 'white', lastMove);
+            
+            for (const move of moves) {
+                const newBoard = this.makeMove(board, move);
+                const [eval, _] = this.minimax(newBoard, depth - 1, alpha, beta, false, move);
+                if (eval > maxEval) {
+                    maxEval = eval;
+                    bestMove = move;
+                }
+                alpha = Math.max(alpha, eval);
+                if (beta <= alpha) {
+                    break; // Alpha-beta pruning
+                }
+            }
+            return [maxEval, bestMove];
+        } else {
+            let minEval = Infinity;
+            let bestMove = null;
+            const moves = this.getAllValidMoves(board, 'black', lastMove);
+            
+            for (const move of moves) {
+                const newBoard = this.makeMove(board, move);
+                const [eval, _] = this.minimax(newBoard, depth - 1, alpha, beta, true, move);
+                if (eval < minEval) {
+                    minEval = eval;
+                    bestMove = move;
+                }
+                beta = Math.min(beta, eval);
+                if (beta <= alpha) {
+                    break; // Alpha-beta pruning
+                }
+            }
+            return [minEval, bestMove];
+        }
+    }
+
+    // EXACT SAME HELPER FUNCTIONS AS PYTHON
+    getAllValidMoves(board, color, lastMove) {
+        const moves = [];
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const piece = board[row][col];
+                if (piece && piece.color === color) {
+                    const pieceMoves = this.getValidMovesForBoard(board, row, col, lastMove);
+                    for (const move of pieceMoves) {
+                        moves.push([[row, col], [move[0], move[1]]]);
+                    }
+                }
+            }
+        }
+        return moves;
+    }
+
+    makeMove(board, move) {
+        const [startPos, endPos] = move;
+        const newBoard = JSON.parse(JSON.stringify(board));
+        const piece = newBoard[startPos[0]][startPos[1]];
+        piece.position = [endPos[0], endPos[1]];
+        newBoard[endPos[0]][endPos[1]] = piece;
+        newBoard[startPos[0]][startPos[1]] = null;
+        return newBoard;
+    }
+
+    getValidMovesForBoard(board, row, col, lastMove) {
+        const piece = board[row][col];
+        if (!piece) return [];
+
+        let moves = [];
+        switch (piece.type) {
+            case 'pawn':
+                moves = this.pawnMovesForBoard(piece, board, lastMove);
+                break;
+            case 'knight':
+                moves = this.knightMovesForBoard(piece, board);
+                break;
+            case 'bishop':
+                moves = this.bishopMovesForBoard(piece, board);
+                break;
+            case 'rook':
+                moves = this.rookMovesForBoard(piece, board);
+                break;
+            case 'queen':
+                moves = this.queenMovesForBoard(piece, board);
+                break;
+            case 'king':
+                moves = this.kingMovesForBoard(piece, board);
+                break;
+        }
+
+        // Filter moves that don't leave king in check
+        const legalMoves = [];
+        for (const move of moves) {
+            if (this.isLegalMoveForBoard(board, row, col, move[0], move[1])) {
+                legalMoves.push(move);
+            }
+        }
+        return legalMoves;
+    }
+
+    isLegalMoveForBoard(board, fromRow, fromCol, toRow, toCol) {
+        const tempBoard = JSON.parse(JSON.stringify(board));
+        const piece = tempBoard[fromRow][fromCol];
+        if (!piece) return false;
+        
+        tempBoard[toRow][toCol] = piece;
+        tempBoard[fromRow][fromCol] = null;
+        piece.position = [toRow, toCol];
+
+        return !this.isInCheckForBoard(tempBoard, piece.color);
+    }
+
+    isInCheckForBoard(board, color) {
+        let kingPosition = null;
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const piece = board[row][col];
+                if (piece && piece.color === color && piece.type === 'king') {
+                    kingPosition = [row, col];
+                    break;
+                }
+            }
+            if (kingPosition) break;
+        }
 
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
-                const piece = this.board[row][col];
-                if (piece && piece.color === 'black') {
-                    const moves = this.getValidMoves(row, col);
+                const piece = board[row][col];
+                if (piece && piece.color !== color) {
+                    const validMoves = this.getPieceMovesForBoard(piece, board);
+                    if (validMoves.some(move => move[0] === kingPosition[0] && move[1] === kingPosition[1])) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    getPieceMovesForBoard(piece, board) {
+        switch (piece.type) {
+            case 'pawn':
+                return this.pawnMovesForBoard(piece, board);
+            case 'knight':
+                return this.knightMovesForBoard(piece, board);
+            case 'bishop':
+                return this.bishopMovesForBoard(piece, board);
+            case 'rook':
+                return this.rookMovesForBoard(piece, board);
+            case 'queen':
+                return this.queenMovesForBoard(piece, board);
+            case 'king':
+                return this.kingMovesForBoard(piece, board);
+            default:
+                return [];
+        }
+    }
+
+    isCheckmateForBoard(board, color) {
+        if (!this.isInCheckForBoard(board, color)) return false;
+        
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const piece = board[row][col];
+                if (piece && piece.color === color) {
+                    const moves = this.getValidMovesForBoard(board, row, col);
                     for (const move of moves) {
-                        const score = this.minimaxSearch(row, col, move.row, move.col, depth);
-                        if (score > bestScore) {
-                            bestScore = score;
-                            bestMove = {from: {row, col}, to: move};
+                        const tempBoard = JSON.parse(JSON.stringify(board));
+                        const tempPiece = tempBoard[row][col];
+                        tempPiece.position = [move[0], move[1]];
+                        tempBoard[move[0]][move[1]] = tempPiece;
+                        tempBoard[row][col] = null;
+                        if (!this.isInCheckForBoard(tempBoard, color)) {
+                            return false;
                         }
                     }
                 }
             }
         }
-
-        return bestMove;
-    }
-
-    minimaxSearch(fromRow, fromCol, toRow, toCol, depth) {
-        // Make temporary move
-        const tempBoard = JSON.parse(JSON.stringify(this.board));
-        tempBoard[toRow][toCol] = tempBoard[fromRow][fromCol];
-        tempBoard[fromRow][fromCol] = null;
-
-        if (depth === 0) {
-            return this.evaluateBoard(tempBoard);
-        }
-
-        // Find best response from white
-        let bestScore = Infinity;
-        for (let row = 0; row < 8; row++) {
-            for (let col = 0; col < 8; col++) {
-                const piece = tempBoard[row][col];
-                if (piece && piece.color === 'white') {
-                    const moves = this.getValidMovesForBoard(tempBoard, row, col);
-                    for (const move of moves) {
-                        const newTempBoard = JSON.parse(JSON.stringify(tempBoard));
-                        newTempBoard[move.row][move.col] = newTempBoard[row][col];
-                        newTempBoard[row][col] = null;
-                        const score = this.minimaxSearch(row, col, move.row, move.col, depth - 1);
-                        bestScore = Math.min(bestScore, score);
-                    }
-                }
-            }
-        }
-
-        return bestScore;
+        return true;
     }
 
     getValidMovesForBoard(board, row, col) {
@@ -966,24 +1114,116 @@ class ChessGame {
         return moves;
     }
 
+    // EXACT SAME BOARD EVALUATION AS PYTHON
     evaluateBoard(board) {
+        const pieceValue = {
+            'pawn': 100,
+            'knight': 320,
+            'bishop': 330,
+            'rook': 500,
+            'queen': 900,
+            'king': 20000
+        };
+
+        // Piece-square tables (same as Python)
+        const pawnTable = [
+            [0,  0,  0,  0,  0,  0,  0,  0],
+            [50, 50, 50, 50, 50, 50, 50, 50],
+            [10, 10, 20, 30, 30, 20, 10, 10],
+            [5,  5, 10, 25, 25, 10,  5,  5],
+            [0,  0,  0, 20, 20,  0,  0,  0],
+            [5, -5,-10,  0,  0,-10, -5,  5],
+            [5, 10, 10,-20,-20, 10, 10,  5],
+            [0,  0,  0,  0,  0,  0,  0,  0]
+        ];
+
+        const knightTable = [
+            [-50,-40,-30,-30,-30,-30,-40,-50],
+            [-40,-20,  0,  0,  0,  0,-20,-40],
+            [-30,  0, 10, 15, 15, 10,  0,-30],
+            [-30,  5, 15, 20, 20, 15,  5,-30],
+            [-30,  0, 15, 20, 20, 15,  0,-30],
+            [-30,  5, 10, 15, 15, 10,  5,-30],
+            [-40,-20,  0,  5,  5,  0,-20,-40],
+            [-50,-40,-30,-30,-30,-30,-40,-50]
+        ];
+
+        const bishopTable = [
+            [-20,-10,-10,-10,-10,-10,-10,-20],
+            [-10,  0,  0,  0,  0,  0,  0,-10],
+            [-10,  0,  5, 10, 10,  5,  0,-10],
+            [-10,  5,  5, 10, 10,  5,  5,-10],
+            [-10,  0, 10, 10, 10, 10,  0,-10],
+            [-10, 10, 10, 10, 10, 10, 10,-10],
+            [-10,  5,  0,  0,  0,  0,  5,-10],
+            [-20,-10,-10,-10,-10,-10,-10,-20]
+        ];
+
+        const rookTable = [
+            [0,  0,  0,  0,  0,  0,  0,  0],
+            [5, 10, 10, 10, 10, 10, 10,  5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [0,  0,  0,  5,  5,  0,  0,  0]
+        ];
+
+        const queenTable = [
+            [-20,-10,-10, -5, -5,-10,-10,-20],
+            [-10,  0,  0,  0,  0,  0,  0,-10],
+            [-10,  0,  5,  5,  5,  5,  0,-10],
+            [-5,  0,  5,  5,  5,  5,  0, -5],
+            [0,  0,  5,  5,  5,  5,  0, -5],
+            [-10,  5,  5,  5,  5,  5,  0,-10],
+            [-10,  0,  5,  0,  0,  0,  0,-10],
+            [-20,-10,-10, -5, -5,-10,-10,-20]
+        ];
+
+        const kingTable = [
+            [-30,-40,-40,-50,-50,-40,-40,-30],
+            [-30,-40,-40,-50,-50,-40,-40,-30],
+            [-30,-40,-40,-50,-50,-40,-40,-30],
+            [-30,-40,-40,-50,-50,-40,-40,-30],
+            [-20,-30,-30,-40,-40,-30,-30,-20],
+            [-10,-20,-20,-20,-20,-20,-20,-10],
+            [20, 20,  0,  0,  0,  0, 20, 20],
+            [20, 30, 10,  0,  0, 10, 30, 20]
+        ];
+
+        const piecePositionTables = {
+            'pawn': pawnTable,
+            'knight': knightTable,
+            'bishop': bishopTable,
+            'rook': rookTable,
+            'queen': queenTable,
+            'king': kingTable
+        };
+
         let score = 0;
-        const pieceValues = {pawn: 100, knight: 320, bishop: 330, rook: 500, queen: 900, king: 20000};
+        let mobility = 0;
 
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 const piece = board[row][col];
                 if (piece) {
-                    const value = pieceValues[piece.type];
+                    const pieceScore = pieceValue[piece.type];
                     if (piece.color === 'white') {
-                        score += value;
+                        const positionScore = piecePositionTables[piece.type][row][col];
+                        score += pieceScore + positionScore;
+                        mobility += this.getValidMovesForBoard(board, row, col).length;
                     } else {
-                        score -= value;
+                        const flippedRow = 7 - row;
+                        const positionScore = piecePositionTables[piece.type][flippedRow][col];
+                        score -= pieceScore + positionScore;
+                        mobility -= this.getValidMovesForBoard(board, row, col).length;
                     }
                 }
             }
         }
 
+        score += 5 * mobility;
         return score;
     }
 
