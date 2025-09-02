@@ -63,17 +63,31 @@ class ChessGame {
     }
 
     handleClick(e) {
-        if (this.gameOver || this.turn === 'black') return;
+        console.log('Click detected!');
+        if (this.gameOver || this.turn === 'black') {
+            console.log('Game over or not white turn');
+            return;
+        }
 
         const rect = this.canvas.getBoundingClientRect();
         const x = Math.floor((e.clientX - rect.left) / this.squareSize);
         const y = Math.floor((e.clientY - rect.top) / this.squareSize);
 
-        if (x < 0 || x >= 8 || y < 0 || y >= 8) return;
+        console.log(`Clicked at: x=${x}, y=${y}`);
+
+        if (x < 0 || x >= 8 || y < 0 || y >= 8) {
+            console.log('Click outside board');
+            return;
+        }
+
+        const piece = this.board[y][x];
+        console.log('Piece at clicked position:', piece);
 
         if (this.selectedPiece) {
+            console.log('Piece already selected, checking for move');
             // Try to move piece
             if (this.validMoves.some(move => move.row === y && move.col === x)) {
+                console.log('Valid move found, moving piece');
                 this.movePiece(this.selectedPiece, {row: y, col: x});
                 this.selectedPiece = null;
                 this.validMoves = [];
@@ -83,22 +97,31 @@ class ChessGame {
                 // AI move using Stockfish
                 setTimeout(() => this.makeStockfishMove(), 500);
             } else {
+                console.log('Invalid move, selecting new piece');
                 // Select new piece
                 this.selectPiece(y, x);
             }
         } else {
+            console.log('No piece selected, selecting piece');
             this.selectPiece(y, x);
         }
     }
 
     selectPiece(row, col) {
         const piece = this.board[row][col];
+        console.log(`Selecting piece at ${row},${col}:`, piece);
+        console.log('Current turn:', this.turn);
+        
         if (piece && piece.color === this.turn) {
+            console.log('Piece is valid for current turn');
             this.selectedPiece = {row, col};
             this.validMoves = this.getValidMoves(row, col);
+            console.log('Valid moves:', this.validMoves);
             this.drawBoard();
             this.drawPieces();
             this.drawHighlights();
+        } else {
+            console.log('Piece is not valid for current turn or no piece');
         }
     }
 
@@ -170,7 +193,7 @@ class ChessGame {
         const moves = [];
         const [row, col] = piece.position;
         // EXACT SAME POSSIBLE MOVES AS PYTHON
-        const possibleMoves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (2, -1), (2, 1), (1, 2), (1, -2)];
+        const possibleMoves = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [2, -1], [2, 1], [1, 2], [1, -2]];
 
         for (const [r, c] of possibleMoves) {
             const newRow = row + r;
@@ -187,7 +210,7 @@ class ChessGame {
     bishopMoves(piece) {
         const moves = [];
         const [row, col] = piece.position;
-        const possibleMoves = [(1, 1), (-1, 1), (1, -1), (-1, -1)];
+        const possibleMoves = [[1, 1], [-1, 1], [1, -1], [-1, -1]];
 
         for (const [r, c] of possibleMoves) {
             let newRow = row + r;
@@ -214,7 +237,7 @@ class ChessGame {
     rookMoves(piece) {
         const moves = [];
         const [row, col] = piece.position;
-        const possibleMoves = [(1, 0), (0, 1), (-1, 0), (0, -1)];
+        const possibleMoves = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
         for (const [r, c] of possibleMoves) {
             let newRow = row + r;
@@ -242,8 +265,8 @@ class ChessGame {
         const moves = [];
         const [row, col] = piece.position;
         const possibleMoves = [
-            (1, 0), (0, 1), (-1, 0), (0, -1),
-            (1, 1), (-1, 1), (1, -1), (-1, -1)
+            [1, 0], [0, 1], [-1, 0], [0, -1],
+            [1, 1], [-1, 1], [1, -1], [-1, -1]
         ];
 
         for (const [r, c] of possibleMoves) {
@@ -272,8 +295,8 @@ class ChessGame {
         const moves = [];
         const [row, col] = piece.position;
         const possibleMoves = [
-            (1, 0), (0, 1), (-1, 0), (0, -1),
-            (1, 1), (-1, 1), (1, -1), (-1, -1)
+            [1, 0], [0, 1], [-1, 0], [0, -1],
+            [1, 1], [-1, 1], [1, -1], [-1, -1]
         ];
 
         for (const [r, c] of possibleMoves) {
