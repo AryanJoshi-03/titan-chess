@@ -725,27 +725,8 @@ def initialize_board():
     ]
     return board
 
-def get_piece_image(piece):
-    """Get image path for a piece"""
-    if not piece:
-        return None
-    
-    # Map piece types to filenames
-    piece_map = {
-        'pawn': 'pawn',
-        'rook': 'rook', 
-        'knight': 'knight',
-        'bishop': 'bishop',
-        'queen': 'queen',
-        'king': 'king'
-    }
-    
-    piece_name = piece_map.get(piece.piece_type, 'pawn')
-    filename = f"{piece.color}-{piece_name}.png"
-    return f"pieces/{filename}"
-
 def get_piece_symbol(piece):
-    """Get Unicode symbol for piece (fallback)"""
+    """Get Unicode symbol for piece"""
     if not piece:
         return ""
     
@@ -911,29 +892,25 @@ with col1:
                         square_color = "#90EE90"
                         button_style = "border: 2px solid #00AA00 !important; box-shadow: 0 0 5px rgba(0, 170, 0, 0.3) !important;"
                 
-                # Get piece image or symbol
-                piece_image_path = get_piece_image(piece)
                 piece_symbol = get_piece_symbol(piece)
+                # Debug: ensure we have a valid symbol
+                if not piece_symbol and piece:
+                    piece_symbol = "?"  # Fallback symbol
                 
                 # Create button with custom styling
                 button_key = f"square_{row}_{col}"
                 
-                # Display piece image or symbol
-                if piece_image_path:
-                    try:
-                        st.image(piece_image_path, width=60, use_column_width=False)
-                    except:
-                        st.write(piece_symbol)
-                else:
-                    st.write(piece_symbol)
-                
-                # Create invisible button for interaction
-                if st.button(
-                    "", 
+                # Use st.button with custom CSS
+                # Ensure we have a valid display text
+                display_text = piece_symbol if piece_symbol else " "
+                button_clicked = st.button(
+                    display_text, 
                     key=button_key,
                     help=f"Square {chr(97 + col)}{8 - row}",
                     use_container_width=True
-                ):
+                )
+                
+                if button_clicked:
                     if not st.session_state.game_over:
                         if st.session_state.selected_piece is None:
                             # Select piece

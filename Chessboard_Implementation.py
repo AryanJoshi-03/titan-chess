@@ -1,4 +1,4 @@
-import pygame
+t cimport pygame
 import sys
 import copy
 import os
@@ -20,7 +20,7 @@ HIGHLIGHT_COLOR = (0, 255, 0)
 
 # Create the game window
 screen = pygame.display.set_mode(size)
-pygame.display.set_caption("TitanChess - Elite AI Chess Platform")
+pygame.display.set_caption("Chess")
 
 # Define square size first
 square_size = 100
@@ -64,29 +64,10 @@ def draw_pieces(screen, board):
             if piece:
                 piece_key = f"{piece.color}_{piece.piece_type}"
                 if pieces[piece_key] is not None:
-                    screen.blit(pieces[piece_key], (col * square_size, row * square_size))
+                screen.blit(pieces[piece_key], (col * square_size, row * square_size))
 
 def draw_highlight(screen, row, col):
     pygame.draw.rect(screen, HIGHLIGHT_COLOR, (col * square_size, row * square_size, square_size, square_size), 5)
-
-def draw_game_status(screen, turn, game_over, check_status):
-    """Draw game status information"""
-    font = pygame.font.Font(None, 36)
-    
-    # Current turn
-    turn_text = f"Current Turn: {turn.title()}"
-    turn_surface = font.render(turn_text, True, WHITE)
-    screen.blit(turn_surface, (10, 10))
-    
-    # Game status
-    if game_over:
-        status_text = "Game Over!"
-        status_surface = font.render(status_text, True, (255, 0, 0))
-        screen.blit(status_surface, (10, 50))
-    elif check_status:
-        status_text = f"{turn.title()} is in check!"
-        status_surface = font.render(status_text, True, (255, 255, 0))
-        screen.blit(status_surface, (10, 50))
 
 def get_square_under_mouse():
     mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
@@ -125,9 +106,9 @@ def pawn_moves(board, piece, last_move=None):
             elif board[row][capture_col] and board[row][capture_col].piece_type == 'pawn' and board[row][capture_col].color != piece.color:
                 if piece.color == 'white' and row == 3 or piece.color == 'black' and row == 4:
                     if last_move:
-                        last_move_start, last_move_end = last_move
-                        if last_move_end == (row, capture_col) and abs(last_move_start[0] - last_move_end[0]) == 2:
-                            valid_moves.append((row + direction, capture_col))
+                    last_move_start, last_move_end = last_move
+                    if last_move_end == (row, capture_col) and abs(last_move_start[0] - last_move_end[0]) == 2:
+                        valid_moves.append((row + direction, capture_col))
 
     return valid_moves
 
@@ -686,13 +667,13 @@ def minimax(board, depth, alpha, beta, maximizing_player, last_move=None):
         return max_eval, best_move
     else:
         min_eval = float('inf')
-        best_move = None
+    best_move = None
         for move in get_all_valid_moves(board, 'black', last_move):
-            new_board = make_move(board, move)
+        new_board = make_move(board, move)
             eval, _ = minimax(new_board, depth - 1, alpha, beta, True, move)
             if eval < min_eval:
                 min_eval = eval
-                best_move = move
+            best_move = move
             beta = min(beta, eval)
             if beta <= alpha:
                 break
@@ -791,7 +772,7 @@ while True:
         end_row = 8 - int(uci_move[3])
         piece = board[start_row][start_col]
         target_position = (end_row, end_col)
-        piece.update_position(target_position)
+            piece.update_position(target_position)
         board[end_row][end_col] = piece
         board[start_row][start_col] = None
         # --- Fix castling: move the rook as well ---
@@ -809,17 +790,17 @@ while True:
             board[rook_row][rook_end_col] = rook
             rook.update_position((rook_row, rook_end_col))
             board[rook_row][rook_start_col] = None
-        turn = 'white'
+            turn = 'white'
         update_fen_state(board, target_position, piece, 'black')
-        # Check for check, checkmate, and stalemate after each move
-        if is_checkmate(board, turn):
-            print(f"Checkmate! {turn} loses.")
-            running = False
-        elif is_stalemate(board, turn):
-            print("Stalemate! It's a draw.")
-            running = False
-        elif is_in_check(board, turn):
-            print(f"{turn} is in check.")
+            # Check for check, checkmate, and stalemate after each move
+            if is_checkmate(board, turn):
+                print(f"Checkmate! {turn} loses.")
+                running = False
+            elif is_stalemate(board, turn):
+                print("Stalemate! It's a draw.")
+                running = False
+            elif is_in_check(board, turn):
+                print(f"{turn} is in check.")
 
     # Clear the screen
     screen.fill(BLACK)
@@ -830,10 +811,6 @@ while True:
         draw_highlight(screen, selected_piece[0], selected_piece[1])
         for move in highlighted_moves:
             draw_highlight(screen, move[0], move[1])
-
-    # Draw game status
-    check_status = is_in_check(board, turn)
-    draw_game_status(screen, turn, not running, check_status)
 
     pygame.display.flip()
 
