@@ -1,7 +1,8 @@
-esimport pygame
+import pygame
 import sys
 import copy
 import os
+
 
 # Initialize Pygame
 pygame.init()

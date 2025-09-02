@@ -63,31 +63,17 @@ class ChessGame {
     }
 
     handleClick(e) {
-        console.log('Click detected!');
-        if (this.gameOver || this.turn === 'black') {
-            console.log('Game over or not white turn');
-            return;
-        }
+        if (this.gameOver || this.turn === 'black') return;
 
         const rect = this.canvas.getBoundingClientRect();
         const x = Math.floor((e.clientX - rect.left) / this.squareSize);
         const y = Math.floor((e.clientY - rect.top) / this.squareSize);
 
-        console.log(`Clicked at: x=${x}, y=${y}`);
-
-        if (x < 0 || x >= 8 || y < 0 || y >= 8) {
-            console.log('Click outside board');
-            return;
-        }
-
-        const piece = this.board[y][x];
-        console.log('Piece at clicked position:', piece);
+        if (x < 0 || x >= 8 || y < 0 || y >= 8) return;
 
         if (this.selectedPiece) {
-            console.log('Piece already selected, checking for move');
             // Try to move piece
             if (this.validMoves.some(move => move.row === y && move.col === x)) {
-                console.log('Valid move found, moving piece');
                 this.movePiece(this.selectedPiece, {row: y, col: x});
                 this.selectedPiece = null;
                 this.validMoves = [];
@@ -97,31 +83,22 @@ class ChessGame {
                 // AI move using Stockfish
                 setTimeout(() => this.makeStockfishMove(), 500);
             } else {
-                console.log('Invalid move, selecting new piece');
                 // Select new piece
                 this.selectPiece(y, x);
             }
         } else {
-            console.log('No piece selected, selecting piece');
             this.selectPiece(y, x);
         }
     }
 
     selectPiece(row, col) {
         const piece = this.board[row][col];
-        console.log(`Selecting piece at ${row},${col}:`, piece);
-        console.log('Current turn:', this.turn);
-        
         if (piece && piece.color === this.turn) {
-            console.log('Piece is valid for current turn');
             this.selectedPiece = {row, col};
             this.validMoves = this.getValidMoves(row, col);
-            console.log('Valid moves:', this.validMoves);
             this.drawBoard();
             this.drawPieces();
             this.drawHighlights();
-        } else {
-            console.log('Piece is not valid for current turn or no piece');
         }
     }
 
@@ -181,6 +158,19 @@ class ChessGame {
                 const captureSquare = this.board[row + direction][captureCol];
                 if (captureSquare && captureSquare.color !== piece.color) {
                     moves.push({row: row + direction, col: captureCol});
+                }
+                // En passant - EXACT SAME AS PYTHON
+                else if (this.board[row][captureCol] && this.board[row][captureCol].type === 'pawn' && 
+                        this.board[row][captureCol].color !== piece.color) {
+                    if ((piece.color === 'white' && row === 3) || (piece.color === 'black' && row === 4)) {
+                        if (this.lastMove) {
+                            const [lastMoveStart, lastMoveEnd] = this.lastMove;
+                            if (lastMoveEnd[0] === row && lastMoveEnd[1] === captureCol && 
+                                Math.abs(lastMoveStart[0] - lastMoveEnd[0]) === 2) {
+                                moves.push({row: row + direction, col: captureCol});
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -312,8 +302,8 @@ class ChessGame {
 
     // EXACT SAME VALIDATION LOGIC AS PYTHON
     isValidSquare(row, col, pieceColor) {
-        return row >= 0 && row < 8 && col >= 0 && col < 8 && 
-               (!this.board[row][col] || this.board[row][col].color !== pieceColor);
+        return 0 <= row && row < 8 && 0 <= col && col < 8 && 
+               (this.board[row][col] === null || this.board[row][col].color !== pieceColor);
     }
 
     canCastle(king, rook) {
@@ -348,31 +338,30 @@ class ChessGame {
         tempBoard[fromRow][fromCol] = null;
         piece.position = [toRow, toCol]; // Update position in temp board
 
-        // Check if king is in check - simplified version
-        return !this.isKingInCheckSimple(tempBoard, this.turn);
+        // Check if king is in check - EXACT SAME AS PYTHON
+        return !this.isInCheck(tempBoard, piece.color);
     }
     
-    isKingInCheckSimple(board, color) {
-        let kingPos = null;
+    // EXACT SAME CHECK LOGIC AS PYTHON
+    isInCheck(board, color) {
+        let kingPosition = null;
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
-                if (board[row][col] && board[row][col].type === 'king' && board[row][col].color === color) {
-                    kingPos = {row, col};
+                const piece = board[row][col];
+                if (piece && piece.color === color && piece.type === 'king') {
+                    kingPosition = [row, col];
                     break;
                 }
             }
-            if (kingPos) break;
+            if (kingPosition) break;
         }
 
-        if (!kingPos) return false;
-
-        // Check if any enemy piece can attack the king - simplified
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 const piece = board[row][col];
                 if (piece && piece.color !== color) {
-                    const moves = this.getBasicMoves(piece, board);
-                    if (moves.some(move => move.row === kingPos.row && move.col === kingPos.col)) {
+                    const validMoves = this.getPieceMoves(piece, board);
+                    if (validMoves.some(move => move[0] === kingPosition[0] && move[1] === kingPosition[1])) {
                         return true;
                     }
                 }
@@ -381,100 +370,169 @@ class ChessGame {
         return false;
     }
     
-    getBasicMoves(piece, board) {
-        const [row, col] = piece.position;
-        const moves = [];
-        
+    // EXACT SAME PIECE MOVES AS PYTHON
+    getPieceMoves(piece, board) {
         switch (piece.type) {
             case 'pawn':
-                const direction = piece.color === 'white' ? -1 : 1;
-                // Single move forward
-                if (row + direction >= 0 && row + direction < 8 && !board[row + direction][col]) {
-                    moves.push({row: row + direction, col: col});
-                }
-                // Diagonal captures
-                for (const offset of [-1, 1]) {
-                    const newCol = col + offset;
-                    if (newCol >= 0 && newCol < 8 && row + direction >= 0 && row + direction < 8) {
-                        const targetPiece = board[row + direction][newCol];
-                        if (targetPiece && targetPiece.color !== piece.color) {
-                            moves.push({row: row + direction, col: newCol});
-                        }
-                    }
-                }
-                break;
+                return this.pawnMovesForBoard(piece, board);
             case 'knight':
-                const knightMoves = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
-                for (const [dr, dc] of knightMoves) {
-                    const newRow = row + dr;
-                    const newCol = col + dc;
-                    if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-                        const targetPiece = board[newRow][newCol];
-                        if (!targetPiece || targetPiece.color !== piece.color) {
-                            moves.push({row: newRow, col: newCol});
-                        }
-                    }
-                }
-                break;
+                return this.knightMovesForBoard(piece, board);
             case 'bishop':
-                for (const [dr, dc] of [[1,1],[1,-1],[-1,1],[-1,-1]]) {
-                    for (let i = 1; i < 8; i++) {
-                        const newRow = row + dr * i;
-                        const newCol = col + dc * i;
-                        if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
-                        const targetPiece = board[newRow][newCol];
-                        if (targetPiece) {
-                            if (targetPiece.color !== piece.color) moves.push({row: newRow, col: newCol});
-                            break;
-                        }
-                        moves.push({row: newRow, col: newCol});
-                    }
-                }
-                break;
+                return this.bishopMovesForBoard(piece, board);
             case 'rook':
-                for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-                    for (let i = 1; i < 8; i++) {
-                        const newRow = row + dr * i;
-                        const newCol = col + dc * i;
-                        if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
-                        const targetPiece = board[newRow][newCol];
-                        if (targetPiece) {
-                            if (targetPiece.color !== piece.color) moves.push({row: newRow, col: newCol});
-                            break;
-                        }
-                        moves.push({row: newRow, col: newCol});
-                    }
-                }
-                break;
+                return this.rookMovesForBoard(piece, board);
             case 'queen':
-                for (const [dr, dc] of [[1,1],[1,-1],[-1,1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]]) {
-                    for (let i = 1; i < 8; i++) {
-                        const newRow = row + dr * i;
-                        const newCol = col + dc * i;
-                        if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
-                        const targetPiece = board[newRow][newCol];
-                        if (targetPiece) {
-                            if (targetPiece.color !== piece.color) moves.push({row: newRow, col: newCol});
-                            break;
-                        }
-                        moves.push({row: newRow, col: newCol});
-                    }
-                }
-                break;
+                return this.queenMovesForBoard(piece, board);
             case 'king':
-                for (const [dr, dc] of [[1,1],[1,-1],[-1,1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]]) {
-                    const newRow = row + dr;
-                    const newCol = col + dc;
-                    if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-                        const targetPiece = board[newRow][newCol];
-                        if (!targetPiece || targetPiece.color !== piece.color) {
-                            moves.push({row: newRow, col: newCol});
-                        }
-                    }
-                }
-                break;
+                return this.kingMovesForBoard(piece, board);
+            default:
+                return [];
         }
+    }
+
+    pawnMovesForBoard(piece, board) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const direction = piece.color === 'white' ? -1 : 1;
+        const startRow = piece.color === 'white' ? 6 : 1;
+
+        // Move forward
+        if (this.isValidSquareForBoard(board, row + direction, col, piece.color) && !board[row + direction][col]) {
+            moves.push([row + direction, col]);
+            // Check if it's at the starting position and can move two squares
+            if (row === startRow && this.isValidSquareForBoard(board, row + 2 * direction, col, piece.color) && 
+                !board[row + direction][col] && !board[row + 2 * direction][col]) {
+                moves.push([row + 2 * direction, col]);
+            }
+        }
+
+        // Capturing moves
+        for (const offset of [-1, 1]) {
+            const captureCol = col + offset;
+            if (captureCol >= 0 && captureCol < 8) {
+                const captureSquare = board[row + direction][captureCol];
+                if (captureSquare && captureSquare.color !== piece.color) {
+                    moves.push([row + direction, captureCol]);
+                }
+            }
+        }
+
         return moves;
+    }
+
+    knightMovesForBoard(piece, board) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const possibleMoves = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [2, -1], [2, 1], [1, 2], [1, -2]];
+
+        for (const [r, c] of possibleMoves) {
+            const newRow = row + r;
+            const newCol = col + c;
+            if (this.isValidSquareForBoard(board, newRow, newCol, piece.color)) {
+                moves.push([newRow, newCol]);
+            }
+        }
+
+        return moves;
+    }
+
+    bishopMovesForBoard(piece, board) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const possibleMoves = [[1, 1], [-1, 1], [1, -1], [-1, -1]];
+
+        for (const [r, c] of possibleMoves) {
+            let newRow = row + r;
+            let newCol = col + c;
+
+            while (this.isValidSquareForBoard(board, newRow, newCol, piece.color)) {
+                if (!board[newRow][newCol]) {
+                    moves.push([newRow, newCol]);
+                } else if (board[newRow][newCol].color !== piece.color) {
+                    moves.push([newRow, newCol]);
+                    break;
+                } else {
+                    break;
+                }
+                newRow += r;
+                newCol += c;
+            }
+        }
+
+        return moves;
+    }
+
+    rookMovesForBoard(piece, board) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const possibleMoves = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+
+        for (const [r, c] of possibleMoves) {
+            let newRow = row + r;
+            let newCol = col + c;
+
+            while (this.isValidSquareForBoard(board, newRow, newCol, piece.color)) {
+                if (!board[newRow][newCol]) {
+                    moves.push([newRow, newCol]);
+                } else if (board[newRow][newCol].color !== piece.color) {
+                    moves.push([newRow, newCol]);
+                    break;
+                } else {
+                    break;
+                }
+                newRow += r;
+                newCol += c;
+            }
+        }
+
+        return moves;
+    }
+
+    queenMovesForBoard(piece, board) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const possibleMoves = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
+
+        for (const [r, c] of possibleMoves) {
+            let newRow = row + r;
+            let newCol = col + c;
+
+            while (this.isValidSquareForBoard(board, newRow, newCol, piece.color)) {
+                if (!board[newRow][newCol]) {
+                    moves.push([newRow, newCol]);
+                } else if (board[newRow][newCol].color !== piece.color) {
+                    moves.push([newRow, newCol]);
+                    break;
+                } else {
+                    break;
+                }
+                newRow += r;
+                newCol += c;
+            }
+        }
+
+        return moves;
+    }
+
+    kingMovesForBoard(piece, board) {
+        const moves = [];
+        const [row, col] = piece.position;
+        const possibleMoves = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
+
+        for (const [r, c] of possibleMoves) {
+            const newRow = row + r;
+            const newCol = col + c;
+            if (this.isValidSquareForBoard(board, newRow, newCol, piece.color)) {
+                moves.push([newRow, newCol]);
+            }
+        }
+
+        return moves;
+    }
+
+    isValidSquareForBoard(board, row, col, pieceColor) {
+        return 0 <= row && row < 8 && 0 <= col && col < 8 && 
+               (board[row][col] === null || board[row][col].color !== pieceColor);
     }
 
     isKingInCheck(board, color) {
@@ -716,7 +774,13 @@ class ChessGame {
             return;
         }
 
-        // Handle castling
+        // Handle en passant - EXACT SAME AS PYTHON
+        if (piece.type === 'pawn' && Math.abs(from.row - to.row) === 1 && Math.abs(from.col - to.col) === 1 && !capturedPiece) {
+            // En passant capture
+            this.board[from.row][to.col] = null; // Remove the captured pawn
+        }
+
+        // Handle castling - EXACT SAME AS PYTHON
         if (piece.type === 'king' && Math.abs(from.col - to.col) === 2) {
             this.handleCastling(from, to);
         }
@@ -727,10 +791,13 @@ class ChessGame {
         piece.position = [to.row, to.col];
         piece.hasMoved = true;
 
-        // Handle pawn promotion
+        // Handle pawn promotion - EXACT SAME AS PYTHON
         if (piece.type === 'pawn' && (to.row === 0 || to.row === 7)) {
             this.board[to.row][to.col] = {type: 'queen', color: piece.color, hasMoved: true, position: [to.row, to.col]};
         }
+
+        // Update last move for en passant - EXACT SAME AS PYTHON
+        this.lastMove = [[from.row, from.col], [to.row, to.col]];
 
         // Record move
         const moveNotation = this.getMoveNotation(from, to, capturedPiece);
@@ -747,7 +814,7 @@ class ChessGame {
         } else if (this.isStalemate()) {
             this.gameOver = true;
             this.updateGameStatus("Stalemate! It's a draw.");
-        } else if (this.isKingInCheck(this.board, this.turn)) {
+        } else if (this.isInCheck(this.board, this.turn)) {
             this.updateGameStatus(`${this.turn === 'white' ? 'White' : 'Black'} is in check!`);
         } else {
             this.updateGameStatus('');
@@ -998,8 +1065,9 @@ class ChessGame {
         return fen;
     }
 
+    // EXACT SAME CHECKMATE LOGIC AS PYTHON
     isCheckmate() {
-        if (!this.isKingInCheck(this.board, this.turn)) return false;
+        if (!this.isInCheck(this.board, this.turn)) return false;
         
         // Check if any legal move exists
         for (let row = 0; row < 8; row++) {
@@ -1007,15 +1075,25 @@ class ChessGame {
                 const piece = this.board[row][col];
                 if (piece && piece.color === this.turn) {
                     const moves = this.getValidMoves(row, col);
-                    if (moves.length > 0) return false;
+                    for (const move of moves) {
+                        const tempBoard = JSON.parse(JSON.stringify(this.board));
+                        const tempPiece = tempBoard[row][col];
+                        tempPiece.position = [move.row, move.col];
+                        tempBoard[move.row][move.col] = tempPiece;
+                        tempBoard[row][col] = null;
+                        if (!this.isInCheck(tempBoard, this.turn)) {
+                            return false;
+                        }
+                    }
                 }
             }
         }
         return true;
     }
 
+    // EXACT SAME STALEMATE LOGIC AS PYTHON
     isStalemate() {
-        if (this.isKingInCheck(this.board, this.turn)) return false;
+        if (this.isInCheck(this.board, this.turn)) return false;
         
         // Check if any legal move exists
         for (let row = 0; row < 8; row++) {
@@ -1023,7 +1101,16 @@ class ChessGame {
                 const piece = this.board[row][col];
                 if (piece && piece.color === this.turn) {
                     const moves = this.getValidMoves(row, col);
-                    if (moves.length > 0) return false;
+                    for (const move of moves) {
+                        const tempBoard = JSON.parse(JSON.stringify(this.board));
+                        const tempPiece = tempBoard[row][col];
+                        tempPiece.position = [move.row, move.col];
+                        tempBoard[move.row][move.col] = tempPiece;
+                        tempBoard[row][col] = null;
+                        if (!this.isInCheck(tempBoard, this.turn)) {
+                            return false;
+                        }
+                    }
                 }
             }
         }
