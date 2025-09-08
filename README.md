@@ -24,33 +24,6 @@ A modern, web-based chess game built with HTML5 Canvas and JavaScript, featuring
    - Simply open `index.html` in any modern web browser
    - No installation or dependencies required!
 
-## 🌐 Deploy to GitHub Pages
-
-### Option 1: Automatic Deployment (Recommended)
-
-1. **Create a new GitHub repository** named `titanchess`
-2. **Upload all files** to the repository:
-   - `index.html`
-   - `styles.css`
-   - `chess.js`
-   - `README.md`
-3. **Enable GitHub Pages:**
-   - Go to repository Settings → Pages
-   - Source: Deploy from a branch
-   - Branch: main (or master)
-   - Click Save
-4. **Your game will be live at:** `https://AryanJoshi-03.github.io/titanchess`
-
-### Option 2: Manual Deployment
-
-1. **Create a new branch called `gh-pages`:**
-   ```bash
-   git checkout -b gh-pages
-   git push origin gh-pages
-   ```
-
-2. **Enable GitHub Pages** with the `gh-pages` branch as source
-
 ## 📱 Resume Integration
 
 Add this link to your resume:
