@@ -24,20 +24,6 @@ A modern, web-based chess game built with HTML5 Canvas and JavaScript, featuring
    - Simply open `index.html` in any modern web browser
    - No installation or dependencies required!
 
-## 📱 Resume Integration
-
-Add this link to your resume:
-```
-TitanChess: https://AryanJoshi-03.github.io/titanchess
-```
-
-**Resume Description:**
-```
-TitanChess: Elite AI Chess Platform | Dec 2023 – Jul 2024
-• Achieved a 100% win rate in 50 AI-vs-human simulations, outperforming players up to 2500 ELO
-• Engineered a robust web-based chess system with seamless AI integration, dynamic move validation, 
-  strict rules enforcement (castling, en passant, promotion), and a fully interactive interface
-```
 
 ## 🛠️ Technical Implementation
 
