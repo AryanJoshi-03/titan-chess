@@ -2,9 +2,6 @@
 
 A modern, web-based chess game built with HTML5 Canvas and JavaScript, featuring a sophisticated AI opponent and complete chess rule implementation.
 
-## 🎮 Live Demo
-
-**Play the game directly in your browser:** [TitanChess Demo](https://AryanJoshi-03.github.io/titanchess)
 
 ## ✨ Features
 
@@ -118,10 +115,6 @@ evaluateMove(fromRow, fromCol, toRow, toCol) {
 ## 🤝 Contributing
 
 Feel free to submit issues and enhancement requests!
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
 
 ## 🏆 Achievements
 
